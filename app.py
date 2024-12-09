@@ -15,10 +15,10 @@ matplotlib.rc('font', **font)
 # Load path to package and load a few useful things
 print(os.getcwd())
 # goal is to make this take the github version!
-sys.path.append('/data/abaker/specsim/specsim')
-from objects import load_object
-from load_inputs import fill_data
-from functions import *
+sys.path.append('/data/abaker/specsim/')
+from specsim.objects import load_object
+from specsim.load_inputs import fill_data
+from specsim.functions import *
 
 from flask import Flask, render_template, request, jsonify, Response,send_from_directory, session
 
