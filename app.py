@@ -149,23 +149,23 @@ def define_config_file(data,instrument):
                     'transmission_file':DATA_DIR + 'instrument/%s/track/trackingcamera.csv'%instrument,
                     'texp':'1',
                     'field_r':'0'}
-    config['coron']={'mode':'off-axis',
-                    'p_law_dh':'-2.0'}
-    config['etc']={'ccf':'on',
-                    'ccfetc':'no',
-                    'cal':'0.01'}
+    #config['coron']={'mode':'off-axis',
+    #                'p_law_dh':'-2.0'}
+    #config['etc']={'ccf':'on',
+    #                'ccfetc':'no',
+    #                'cal':'0.01'}
     #config['etc']={'ccf':'no',
     #                    'ccfetc':'open',
     #                    'goal_ccf':data['goal_ccf'],
     #                    'SN':data['target_snr'],
     #                    'texp_frame':data['frame_exposure_time']}
-    config['rv']={'water_only':'False',
-                    'line_spacing':'None',
-                    'peak_spacing':'2e4',
-                    'height':'0.055',
-                    'cutoff':'0.01',
-                    'velocity_cutoff':'10',
-                    'rv_floor':'0.5'}
+    #config['rv']={'water_only':'False',
+    #                'line_spacing':'None',
+    ##                'peak_spacing':'2e4',
+    #                'height':'0.055',
+    #                'cutoff':'0.01',
+    #                'velocity_cutoff':'10',
+    #                'rv_floor':'0.5'}
 
     # individual things for instrument type easier to define individually
     if instrument =='hispec':
@@ -173,18 +173,18 @@ def define_config_file(data,instrument):
         config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HOwfe.csv'%instrument
         config['ao']['lo_wfe']        ='30'
         config['ao']['defocus']       ='25'
-        config['coron']['nactuators'] = '30',
-        config['coron']['fiber_contrast_gain'] = '3.'
+        #config['coron']['nactuators'] = '30',
+        #config['coron']['fiber_contrast_gain'] = '3.'
     elif instrument=='modhis':
         config['ao']['ttdynamic_set'] = DATA_DIR +'instrument/%s/ao/TTDYNAMIC_NFIRAOS_091123.csv'%instrument
         config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HOWFE_NFIRAOS_091123.csv'%instrument
         config['ao']['lo_wfe']        ='10'
         config['ao']['defocus']       ='10'
-        config['coron']['nactuators'] = '58',
-        config['coron']['fiber_contrast_gain'] = '10.'
+        #config['coron']['nactuators'] ='58'
+        #config['coron']['fiber_contrast_gain'] = '10.'
 
     # if off axis, define planet stuff
-    if data['run_mode'] == 'snr_off' or 'etc_off':
+    if data['run_mode'] == 'snr_off' or data['run_mode'] =='etc_off':
         if float(data['planet_temperature']) <= 7400:
             plan_temp = str(round(float(data['planet_temperature'])/ 100) * 100)
         else:
@@ -195,9 +195,12 @@ def define_config_file(data,instrument):
     else:
         # make sure planet separation is 0 if not in off axis mode (after i edit code back to my own)
         config['stel']['vsini'] = data['vsini'] # these are only defined for star for on axis case
-        config['stel']['rv'] = data['rv']
-    if data['run_mode'] == 'snr_off' or 'snr_on':
+        config['stel']['rv']    = data['rv']
+    
+    if data['run_mode'] == 'snr_off' or data['run_mode']=='snr_on':
         config['obs']['texp'] = data['exposure_time'] # only fill in exopsure time if in snr mode
+    else:
+        config['obs']['texp_frame'] = data['frame_exposure_time']
 
     return config
 
