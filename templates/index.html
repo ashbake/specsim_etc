@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.0"/>
+    <title>MODHIS/HISPEC Observing Scenario Simulator</title>
+    <link rel="icon" href="https://raw.githubusercontent.com/Hu1haoZhang/specsim_static_file/main/caltech.ico" type="image/x-icon">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link type="text/css" rel="stylesheet" href="/static/materialize.min.css"  media="screen,projection"/>
+
+</head>
+<body>
+    <div class="container">
+        <img src="https://raw.githubusercontent.com/Hu1haoZhang/specsim_static_file/main/modhis.png">
+        <h5 class="left-align">Signal-to-Noise Ratio (SNR) Calculator</h5><br>
+
+        <div class="row">
+            <div class="col s12 left-align">
+                <a class="waves-effect waves-light btn" href="{{ url_for('etc') }}">Exposure Time Calculator</a>
+            </div>
+        </div>
+        <br>
+        <form>
+            <div class="input-field">
+                <select id="object_type">
+                    <option value="snr_off">Off-axis</option>
+                    <option value="snr_on">On-axis</option>
+                </select>
+                <label>Observing Mode</label>
+            </div>
+            <!-- More form fields here -->
+        </form>
+        <form>
+            <h5 class="left-align">Object Properties</h5>
+            <div class="row">
+                <div class="input-field col s12">
+                    <input type="number" id="star_temperature" placeholder="Kelvin" value="7400" required>
+                    <label for="star_temperature">On-axis Object Temperature (K) (200-12000)</label>
+                </div>
+                <div class="input-field col s12">
+                    <input type="number" id="star_magnitude" placeholder="Vega" value="5.383" required>
+                    <label for="star_magnitude">On-axis Object Magnitude (Vega)</label>
+                </div>
+            </div>
+            
+            <div id="vsini_div" class="row">
+                <div class="input-field col s12">
+                    <input type="number" id="vsini" placeholder="km/s" value="34.79" required>
+                    <label for="vsini">Vsini of On-axis Object (km/s)</label>
+                </div>
+            </div>
+
+            <div id="rv_div" class="row">
+                <div class="input-field col s12">
+                    <input type="number" id="rv" placeholder="km/s" value="34.79" required>
+                    <label for="rv">RV of On-axis Object (km/s)</label>
+                </div>
+            </div>
+            
+            <div id="planet_temperature_div" class="row">
+                <div class="input-field col s12">
+                    <input type="number" id="planet_temperature" placeholder="Kelvin" value="900" required>
+                    <label for="planet_temperature">Off-axis Object Temperature (K) (200-12000)</label>
+                </div>
+            </div>
+            
+            <div id="planet_magnitude_div" class="row">
+                <div class="input-field col s12">
+                    <input type="number" id="planet_magnitude" placeholder="Vega" value="19.4" required>
+                    <label for="planet_magnitude">Off-axis Object Magnitude (Vega)</label>
+                </div>
+            </div>
+            
+            <div id="planet_vsini_div" class="row">
+                <div class="input-field col s12">
+                    <input type="number" id="planet_vsini" placeholder="km/s" value="34.79" required>
+                    <label for="planet_vsini">Vsini of Off-axis Object (km/s)</label>
+                </div>
+            </div>
+            
+            <div id="ang_sep_div" class="row">
+                <div class="input-field col s12">
+                    <input type="number" id="ang_sep" placeholder="mas" value="1743" required>
+                    <label for="ang_sep">Angular Separation Between Objects (mas)</label>
+                </div>
+            </div>
+</form>
+
+<form>
+    <h5 class="left-align">Filter for Object Magnitude Definition</h5>
+    <div class="input-field">
+        <select id="filter">
+            <option value="2mass-J">2mass-J</option>
+            <option value="2mass-K">2mass-K</option>
+            <option value="2mass-H">2mass-H</option>
+        </select>
+        <label>Filter and Band</label>
+    </div>
+</form>
+<form>
+    <h5 class="left-align">Instrument & Sky Setting</h5>
+    <div class="input-field">
+        <select id="ao_mode">
+            <option value="auto">auto</option>
+            <option value="LGS_OFF">LGS_OFF</option>
+            <option value="LGS_ON">LGS_ON</option>
+            <option value="NGS">NGS</option>
+        </select>
+        <label>Mode of AO</label>
+    </div>
+    
+    <div class="input-field">
+        <select id="atmospheric_conditions">
+            <option value="good">Good</option>
+            <option value="average">Average</option>
+            <option value="bad">Bad</option>
+        </select>
+        <label>Atmospheric Conditions</label>
+    </div>
+    
+    <div class="input-field">
+        <select id="zenith_angle">
+            <option value="30">30</option>
+            <option value="60">60</option>
+            <option value="45">45</option>
+            <option value="0">0</option>
+        </select>
+        <label>Zenith Angle (degrees)</label>
+    </div>
+    
+    <div class="input-field">
+        <input type="number" id="pwv" placeholder="mm" title='precipitable water vapor' value="1.5" required>
+        <label for="pwv">PWV (mm) (1-50)</label>
+    </div>
+</form>
+
+    <h5 class="left-align">Exposure Setting</h5>
+    <div class="input-field">
+        <input type="number" id="exposure_time" placeholder="seconds" title='exposure time in seconds' value="14400" required>
+        <label for="exposure_time">Exposure Time (s)</label>
+    </div>
+
+
+    <div class="row">
+        <div class="col s12 left-align">
+            <button class="btn waves-effect waves-light" onclick="submitData()" id="submitBt">Submit
+                <i class="material-icons right">send</i>
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col s12 left-align">
+            <button class="btn waves-effect waves-light" onclick="submitData2()" id="submitBt2">Submit
+                <i class="material-icons right">send</i>
+            </button>
+            
+        </div>
+    </div>
+
+
+<div id="hiddenSection1" style="display: none;">
+<h5 class="left-align">Task Status</h5>
+<div id="result" class="left-align"></div>
+
+<div id="hiddenSection1.1" style="display: none;">
+<div class="progress">
+    <div class="indeterminate"></div>
+</div>
+
+</div>
+</div>
+<br>
+<div id="hiddenSection2" style="display: none;">
+<!-- Get Data/Show Data -->
+<div class="row">
+    <div class="col s12 left-align">
+        <button class="btn waves-effect waves-light" onclick="downloadCSV()">Download Data</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col s12 left-align">
+        <button class="btn waves-effect waves-light" id="showdata" onclick="fetchPlotdata()">Show Data</button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col s12 left-align">
+        <button class="btn waves-effect waves-light" id="showdata2" onclick="fetchPlotdata2()">Show Data</button>
+    </div>
+</div>
+
+<!-- Data Plot -->
+<div id="PlotSection" style="display: none;">
+<img id="plotImg" src="" alt="Plot Image" class="responsive-img">
+</div>
+<!-- CCF Label -->
+<div id="CCFSection" style="display: none;">
+<div class="row">
+    <div class="col s12 left-align">
+        <h6 id="ccf_label_y">y Band CCF SNR:</h6><div id="yBandPlaceholder">y Band CCF SNR: </div>
+        <h6 id="ccf_label_j">J Band CCF SNR:</h6> <div id="jBandPlaceholder">J Band CCF SNR: </div>
+        <h6 id="ccf_label_h">H Band CCF SNR:</h6><div id="hBandPlaceholder">H Band CCF SNR: </div>
+        <h6 id="ccf_label_k">K Band CCF SNR:</h6><div id="kBandPlaceholder">K Band CCF SNR: </div>
+    </div>
+</div>
+</div>
+</div>
+<div class="row">
+    <div class="col s12">
+        <h5>Calculation Details</h5>
+        <p class="grey-text text-darken-2">For object's model spectrum, temperatures above 2200K will load Phoenix and temperatures below 2200K will load Sonora. For the method used for CCF SNR, see compute_ccf_snr_matchedfilter in <a href="https://github.com/planetarysystemsimager/psisim/blob/kpic/psisim/signal.py">PSI-sim</a>. For special cases or custom simulations, please refer <a href="https://github.com/ashbake/specsim/tree/main">Specsim</a>.</p>
+      </div>
+</div>
+<footer class="page-footer teal lighten-2">
+    <div class="container">
+        <div class="row">
+            <div class="col s12">
+                <h5 class="white-text">TMT-MODHIS</h5>
+                <p class="grey-text text-lighten-4">MODHIS (Multi-Objective Diffraction-limited High-resolution Infrared Spectrograph), slated for first light at the Thirty Meter Telescope in the 2030s, is a new high-resolution (R~100,000) near-infrared (NIR) fiber-fed diffraction-limited spectrograph operating between 0.98-2.46 μm (y, J, H, and K bands simultaneously). MODHIS led out of Caltech, the University of California (UC Los Angeles and UC San Diego) with participation from multiple institutions, including the Jet Propulsion Laboratory (JPL), the AstroBiology Center (Tokyo, Japan), the University of Montreal, the American Museum of Natural History (AMNH). For more information about MODHIS, please contact Prof. Dimitri Mawet (dmawet@astro.caltech.edu). For questions about the simulator or bug reporting, please contact Dr. Ashley Baker (abaker@caltech.edu) and/or Huihao Zhang (zhang.12043@osu.edu).</p>
+            </div>
+            <div class="col s12">
+                <h5 class="white-text">Keck-HISPEC Calculator</h5>
+                <ul>
+                    <li><a class="grey-text text-lighten-3" href="{{ url_for('hispec_snr') }}">SNR Calculator</a></li>
+                    <li><a class="grey-text text-lighten-3" href="{{ url_for('hispec_etc') }}">Exposure Time Calculator</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="footer-copyright">
+        <div class="container">
+            © 2014 Copyright Text
+        </div>
+    </div>
+</footer>
+
+
+<br>
+    <script>
+        function submitData() {
+            $("#hiddenSection1").show();
+            $("#hiddenSection1\\.1").show();
+            $("#hiddenSection2").hide();
+            $("#PlotSection").hide();
+            $("#CCFSection").hide();
+            resetOutputs();
+            // Collect all the data from the input boxes and dropdowns
+            const requestData = {
+                star_temperature: $("#star_temperature").val(),
+                star_magnitude: $("#star_magnitude").val(),
+                planet_temperature: $("#planet_temperature").val(),
+                planet_magnitude: $("#planet_magnitude").val(),
+                planet_vsini: $("#planet_vsini").val(),
+                ang_sep: $("#ang_sep").val(),
+                pwv: $("#pwv").val(),
+                filter: $("#filter").val(),
+                ao_mode: $("#ao_mode").val(),
+                zenith_angle: $("#zenith_angle").val(),
+                atmospheric_conditions: $("#atmospheric_conditions").val(),
+                run_mode: $("#object_type").val(),
+                exposure_time: $("#exposure_time").val(),
+
+            };
+
+            // Send the data to Flask backend (you can adjust this as per your requirements)
+            $.ajax({
+        type: 'POST',
+        url: '/submit_data',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        dataType: 'json',
+        success: function(data, status, xhr) {
+            alert("Data received, please wait and check the task status!");
+            var location = xhr.getResponseHeader('Location');
+
+            // Replace 'app3_server' with the actual server IP or domain
+            location = location.replace('app3_server', 'specsim.astro.caltech.edu');
+            
+            check_task(location);
+        },
+        error: function(error) {
+            alert("Error occurred!");
+        }
+    });
+    
+    
+    function check_task(location) {
+        console.log("Trying to fetch:", location);
+        $.getJSON(location, function(data) {
+            console.log("Received data:", data);
+            $('#status').html('Calculation in Progress...');
+            if (data['state'] !== 'SUCCESS') {
+                console.log("Task not yet completed. Checking again...");
+                setTimeout(function() {
+                    check_task(location);
+                }, 1000);
+            } else {
+                console.log("Task completed!");
+                $('#result').html('Calculation Completed!');
+                $("#hiddenSection1\\.1").hide();
+                $("#hiddenSection2").show();
+            }
+        });
+    }
+}
+
+function submitData2() {
+    $("#hiddenSection1").show();
+    $("#hiddenSection1\\.1").show();
+    $("#hiddenSection2").hide();
+    $("#PlotSection").hide();
+    $("#CCFSection").hide();
+    resetOutputs();
+            // Collect all the data from the input boxes and dropdowns
+            const requestData = {
+                star_temperature: $("#star_temperature").val(),
+                star_magnitude: $("#star_magnitude").val(),
+                vsini: $("#vsini").val(),
+                rv: $("#rv").val(),
+                pwv: $("#pwv").val(),
+                filter: $("#filter").val(),
+                ao_mode: $("#ao_mode").val(),
+                zenith_angle: $("#zenith_angle").val(),
+                atmospheric_conditions: $("#atmospheric_conditions").val(),
+                run_mode: $("#object_type").val(),
+                exposure_time: $("#exposure_time").val(),
+
+            };
+
+            // Send the data to Flask backend (you can adjust this as per your requirements)
+            $.ajax({
+        type: 'POST',
+        url: '/submit_data',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        dataType: 'json',
+        success: function(data, status, xhr) {
+            alert("Data received, please wait and check the task status!");
+            var location = xhr.getResponseHeader('Location');
+
+            // Replace 'app3_server' with the actual server IP or domain
+            location = location.replace('app3_server', 'specsim.astro.caltech.edu');
+            
+            check_task(location);
+        },
+        error: function(error) {
+            alert("Error occurred!");
+        }
+    });
+    
+    
+    function check_task(location) {
+        console.log("Trying to fetch:", location);
+        $.getJSON(location, function(data) {
+            console.log("Received data:", data);
+            $('#status').html('Calculation in Progress...');
+            if (data['state'] !== 'SUCCESS') {
+                console.log("Task not yet completed. Checking again...");
+                setTimeout(function() {
+                    check_task(location);
+                }, 1000);
+            } else {
+                console.log("Task completed!");
+                $('#result').html('Calculation Completed!');
+                $("#hiddenSection1\\.1").hide();
+                $("#hiddenSection2").show();
+            }
+        });
+    }
+}
+        function downloadCSV() {
+    // For now, we'll send an empty request. You can adjust this if you need to send any specific data.
+    const requestData = {run_mode: $("#object_type").val()};
+
+    $.ajax({
+        type: 'POST',
+        url: '/download_csv',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        dataType: 'text',  // Expecting text response
+        timeout: 100000,
+        success: function(response) {
+            // Trigger the download
+            var blob = new Blob([response], {type: 'text/csv'});
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = 'data.csv';
+            link.click();
+        },
+        error: function(error) {
+            alert("Error occurred during download!");
+        }
+    });
+}
+function fetchPlotdata() {
+    $("#PlotSection").show();
+    $("#CCFSection").show();
+    $.ajax({
+        type: 'GET',
+        url: '/get_plot',
+        data: {mode: 'off-axis'},
+        success: function(response) {
+            if (response && response.image) {
+                $('#plotImg').attr('src', 'data:image/png;base64,' + response.image);
+            };
+            $.ajax({
+        type: 'GET',
+        url: '/ccf_snr_get_number',
+        data: {mode: 'off-axis'},
+        success: function(response) {
+            $('#yBandPlaceholder').append(response.y_band_snr);
+            $('#jBandPlaceholder').append(response.j_band_snr);
+            $('#hBandPlaceholder').append(response.h_band_snr);
+            $('#kBandPlaceholder').append(response.k_band_snr);
+        },
+        error: function(error) {
+            console.log("Error occurred:", error);
+            alert("Error occurred");
+        }
+    });
+
+
+        },
+        error: function(error) {
+            alert("Error occurred fetching plot!");
+        }
+    });
+}
+
+function fetchPlotdata2() {
+    $("#PlotSection").show();
+    $("#CCFSection").show();
+    $.ajax({
+        type: 'GET',
+        url: '/get_plot',
+        data: {mode: 'on-axis'},
+        success: function(response) {
+            if (response && response.image) {
+                $('#plotImg').attr('src', 'data:image/png;base64,' + response.image);
+            };
+            $.ajax({
+        type: 'GET',
+        url: '/ccf_snr_get_number',
+        data: {mode: 'on-axis'},
+        success: function(response) {
+            $('#yBandPlaceholder').append(response.y_band_snr);
+            $('#jBandPlaceholder').append(response.j_band_snr);
+            $('#hBandPlaceholder').append(response.h_band_snr);
+            $('#kBandPlaceholder').append(response.k_band_snr);
+        },
+        error: function(error) {
+            console.log("Error occurred:", error);
+            alert("Error occurred");
+        }
+    });
+        },
+        error: function(error) {
+            alert("Error occurred fetching plot!");
+        }
+    });
+}
+
+
+        function checkTaskStatus(taskId) {
+    $.get(`/task/${taskId}`, function(response) {
+        if(response.status === 'SUCCESS') {
+            // Your code to plot the graph
+        } else {
+            setTimeout(function() {
+                checkTaskStatus(taskId);
+            }, 2000);
+        }
+    });
+}
+
+(function() {
+        $('#object_type').change(function() {
+            const selectedType = $(this).val();
+
+            if (selectedType === 'snr_off') {
+                $('#vsini_div').hide();
+                $('#planet_temperature_div').show();
+                $('#planet_magnitude_div').show();
+                $('#planet_vsini_div').show();
+                $('#ang_sep_div').show();
+                $('#submitBt').show();
+                $('#submitBt2').hide();
+                $('#ccf_snr').show();
+                $('#ccf_label_y').show();
+                $('#ccf_label_j').show();
+                $('#ccf_label_h').show();
+                $('#ccf_label_k').show();
+                $('#yBandPlaceholder').show();
+                $('#jBandPlaceholder').show();
+                $('#hBandPlaceholder').show();
+                $('#kBandPlaceholderr').show();
+                $('#showdata').show();
+                $('#showdata2').hide();
+                $('#rv_div').hide();
+            } else {
+                $('#vsini_div').show();
+                $('#rv_div').show();
+                $('#planet_temperature_div').hide();
+                $('#planet_magnitude_div').hide();
+                $('#planet_vsini_div').hide();
+                $('#ang_sep_div').hide();
+                $('#submitBt').hide();
+                $('#submitBt2').show();
+                $('#ccf_snr').show();
+                $('#ccf_label_y').show();
+                $('#ccf_label_j').show();
+                $('#ccf_label_h').show();
+                $('#ccf_label_k').show();
+                $('#yBandPlaceholder').show();
+                $('#jBandPlaceholder').show();
+                $('#hBandPlaceholder').show();
+                $('#kBandPlaceholder').show();
+                $('#showdata').hide();
+                $('#showdata2').show();
+            }
+        });
+
+        // Trigger the change event to set the initial state
+        $('#object_type').trigger('change');
+    })();
+    
+    </script>
+  <script type="text/javascript" src="/static/materialize.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var elems = document.querySelectorAll('select');
+      var instances = M.FormSelect.init(elems);
+    });
+
+    function resetOutputs() {
+    $("#plotImg").attr("src", "");  // Reset image source
+    $("#yBandPlaceholder").text("");
+    $("#jBandPlaceholder").text("");
+    $("#hBandPlaceholder").text("");
+    $("#kBandPlaceholder").text(""); // Reset number placeholder  // Reset number placeholder
+    $('#result').html('');
+}
+  </script>
+</body>
+</html>

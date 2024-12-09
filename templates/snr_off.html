@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exposure Time Calculator of TMT-MODHIS</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        .red-box {
+            border: 2px solid red;
+        }
+        </style>
+</head>
+<body>
+    <h1>Signal-to-noise Ratio, off-axis</h1>
+    <a href="{{ url_for('snr_on') }}">SNR, on-axis</a>
+    <a href="{{ url_for('etc_snr_on') }}">ETC SNR, on-axis</a>
+    <a href="{{ url_for('index') }}">ETC SNR, off-axis</a>
+    <a href="{{ url_for('ccf_snr') }}">CCF SNR</a>
+    <a href="{{ url_for('etc_ccf_snr') }}">ETC of CCF SNR</a>
+    <a href="{{ url_for('rv_off') }}">RV, off-axis</a>
+    <a href="{{ url_for('rv_on') }}">RV, on-axis</a><br><br>
+    <br>
+    <!-- Numerical Input Boxes -->
+    <h2>Star and Planet Information</h2>
+    <h3>Example: HR 8799b </h3>
+    Star Temperature(K): <input type="number" id="star_temperature" placeholder="Kelvin" title="temperature of star" value="7400" required><br>
+    Star Magnitude(Vega): <input type="number" id="star_magnitude" placeholder="Vega" title="vega magnitude of star in corresponding band" value="5.383" required><br>
+
+    Planet Temperature(K): <input type="number" id="planet_temperature" placeholder="Kelvin" title="temperature of planet" value="900" required><br>
+    Planet Magnitude(Vega): <input type="number" id="planet_magnitude" placeholder="Vega" title="vega magnitude of planet in corresponding band" value="19.4" required><br>
+    Vsini of Planet(km/s): <input type="number" id="planet_vsini" placeholder="km/s" title="V*sini of planet in km/s" value="34.79" required><br>
+    Angular Seperation(mas): <input type="number" id="ang_sep" placeholder="mas" title="angular seperation of planet in mas" value="1743" required><br>
+    <br>
+    <h2>Filter and Band for Star and Planet</h2>
+    Filter:
+    <select id="filter">
+        <option value="2mass-J">2mass-J</option>
+        <option value="2mass-K">2mass-K</option>
+    </select><br>
+
+    <h2>Instrument & Sky Setting</h2>
+    Instrument:
+    <select id="instrument">
+        <option value="modhis">modhis</option>
+        <option value="hispec">hispec</option>
+    </select><br>
+
+    Mode of AO:
+    <select id="ao_mode">
+        <option value="auto">auto</option>
+        <option value="LGS_OFF">LGS_OFF</option>
+    </select><br>
+
+    Photonic Lantern:
+    <select id="photonic_lantern">
+        <option value="1">1</option>
+        <option value="0">0</option>
+    </select><br>
+    Atmospheric Conditions:
+    <select id="atmospheric_conditions">
+        <option value="good">Good</option>
+        <option value="average">Average</option>
+        <option value="bad">Bad</option>
+    </select><br>
+    Zenith Angle(degrees):
+    <select id="zenith_angle">
+        <option value="30">30</option>
+        <option value="45">45</option>
+        <option value="60">60</option>
+        <option value="0">0</option>
+
+    </select><br>
+    PWV(mm): <input type="number" id="pwv" placeholder="mm" title='precipitable water vapor' value="1.5" required><br>
+
+    <h2>Exposure</h2>
+    Exposure Time(s): <input type="number" id="exposure_time" placeholder="seconds" title='exposure time in seconds' value="14400" required><br>
+
+    <!-- Selection Boxes -->
+<br>
+<button onclick="submitData()">Submit</button>
+<button onclick="downloadCSV()">Download CSV</button>
+<button onclick="fetchPlot()">Show Strehl Ratio</button><br><br>
+<img id="plotImg" src="" alt="Plot Image" style="max-width: 100%; height: auto;">
+<img id="plotImg2" src="" alt="Plot Image" style="max-width: 100%; height: auto;">
+<br>
+
+    <script>
+        function submitData() {
+            resetInputColors()
+            // Collect all the data from the input boxes and dropdowns
+            const requestData = {
+                star_temperature: $("#star_temperature").val(),
+                star_magnitude: $("#star_magnitude").val(),
+                vsini: $("#vsini").val(),
+                rv: $("#rv").val(),
+                planet_temperature: $("#planet_temperature").val(),
+                planet_magnitude: $("#planet_magnitude").val(),
+                planet_vsini: $("#planet_vsini").val(),
+                ang_sep: $("#ang_sep").val(),
+                pwv: $("#pwv").val(),
+                exposure_time: $("#exposure_time").val(),
+                filter: $("#filter").val(),
+                photonic_lantern: $("#photonic_lantern").val(),
+                ao_mode: $("#ao_mode").val(),
+                zenith_angle: $("#zenith_angle").val(),
+                atmospheric_conditions: $("#atmospheric_conditions").val(),
+                instrument: $("#instrument").val(),
+            };
+
+            // Send the data to Flask backend (you can adjust this as per your requirements)
+            $.ajax({
+                type: 'POST',
+                url: '/snr_off_submit_data',
+                contentType: 'application/json',
+                data: JSON.stringify(requestData),
+                dataType: 'json',
+                success: function(response) {
+            console.log("Data submitted successfully!");
+
+            // Now fetch the plot
+            $.ajax({
+        type: 'GET',
+        url: '/snr_off_get_plot',
+        success: function(response) {
+            if (response && response.image) {
+                $('#plotImg').attr('src', 'data:image/png;base64,' + response.image);
+            }
+        },
+        error: function(error) {
+            alert("Error occurred fetching plot!");
+        }
+    });
+        },
+                error: function(error) {
+                    alert("Error occurred!");
+                }
+            });
+        }
+        function downloadCSV() {
+    // For now, we'll send an empty request. You can adjust this if you need to send any specific data.
+    const requestData = {};
+
+    $.ajax({
+        type: 'POST',
+        url: '/snr_off_download_csv',
+        contentType: 'application/json',
+        data: JSON.stringify(requestData),
+        dataType: 'text',  // Expecting text response
+        success: function(response) {
+            // Trigger the download
+            var blob = new Blob([response], {type: 'text/csv'});
+            var link = document.createElement('a');
+            link.href = window.URL.createObjectURL(blob);
+            link.download = 'data.csv';
+            link.click();
+        },
+        error: function(error) {
+            alert("Error occurred during download!");
+        }
+    });
+}
+function fetchPlot() {
+    $.ajax({
+        type: 'GET',
+        url: '/snr_off_get_plot2',
+        success: function(response) {
+            if (response && response.image) {
+                $('#plotImg2').attr('src', 'data:image/png;base64,' + response.image);
+            }
+        },
+        error: function(error) {
+            alert("Error occurred fetching plot!");
+        }
+    });
+}
+function resetInputColors() {
+    var inputs = document.querySelectorAll("input, select");
+    inputs.forEach(function(input) {
+        input.style.backgroundColor = "";  // Resets the background color to default
+    });
+}
+$(document).ready(function() {
+            // Logic to change the background color of input/select fields when they're modified
+            $('input, select').on('change', function() {
+                $(this).css('backgroundColor', 'green');
+            });
+
+            // Reset background color when the form is submitted (if you have a submit button)
+
+        });
+    </script>
+</body>
+</html>
