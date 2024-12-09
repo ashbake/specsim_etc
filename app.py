@@ -135,8 +135,7 @@ def define_config_file(data,instrument):
                     'pl_on':'1',
                     'rv_floor':'0.5',
                     'post_processing':'10'}
-    config['obs']={'texp':data['exposure_time'], # exposure time wont be used in ETC case but OK to define
-                    'texp_frame_set':'default',
+    config['obs']={'texp_frame_set':'default',
                     'nsamp':'16'}
     config['ao']={'inst':instrument,
                 'mode':data['ao_mode'],
@@ -197,6 +196,8 @@ def define_config_file(data,instrument):
         # make sure planet separation is 0 if not in off axis mode (after i edit code back to my own)
         config['stel']['vsini'] = data['vsini'] # these are only defined for star for on axis case
         config['stel']['rv'] = data['rv']
+    if data['run_mode'] == 'snr_off' or 'snr_on':
+        config['obs']['texp'] = data['exposure_time'] # only fill in exopsure time if in snr mode
 
     return config
 
