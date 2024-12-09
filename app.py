@@ -89,7 +89,6 @@ def define_config_file(data,instrument):
     inputs
     -----
     data - user input data
-    mode - mode of run e.g. snr_on
     instrument - which instrument, modhis or hispec
     """
     # some prep work on user data
@@ -113,7 +112,7 @@ def define_config_file(data,instrument):
     config['run']={'plot_prefix':'testrun','savename':'test.txt','instrument':instrument,
                 'mode':data['run_mode']}
     config['stel']={'phoenix_folder':DATA_DIR + '/phoenix/Z-0.0/','sonora_folder':DATA_DIR + 'sonora/',
-                    'vsini':data['vsini'],'rv':data['rv'],'teff':star_temp,'mag':data['star_magnitude']}
+                    'vsini':'0','rv':'0','teff':star_temp,'mag':data['star_magnitude']}
     config['filt']={'zp_file':DATA_DIR + '/filters/zeropoints.txt','filter_path':DATA_DIR + 'filters/'
                     ,'band':data['filter'][-1],'family':data['filter'][:-2]}
     config['tel']={'telluric_file':DATA_DIR + 'telluric/psg_out_2020.08.02_l0_800nm_l1_2700nm_res_0.001nm_lon_204.53_lat_19.82_pres_0.5826.fits'
@@ -196,7 +195,8 @@ def define_config_file(data,instrument):
                         ,'rv':'0','teff':plan_temp,'mag':data['planet_magnitude'],'ang_sep':data['ang_sep']}
     else:
         # make sure planet separation is 0 if not in off axis mode (after i edit code back to my own)
-        pass
+        config['stel']['vsini'] = data['vsini'] # these are only defined for star for on axis case
+        config['stel']['rv'] = data['rv']
 
     return config
 
