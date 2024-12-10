@@ -230,64 +230,38 @@ def async_fill_data(data,session_id):
 
     # store outputs into database
     with app.app_context():
-        if data['run_mode'] == 'snr_off':
-            computed_data = ComputedData(
-                function_type='snr'+session_id, 
-                x_values=so.obs.v[so.obs.ind_filter], 
-                y_values=so.obs.p_snr
-            )
-            computed_data2 = ComputedData(
-                function_type='sr'+session_id, 
-                x_values=so.inst.xtransmit, 
-                y_values=so.inst.ytransmit )
-            computed_data3 = ComputedData(
-                function_type='rv'+session_id, 
-                x_values=so.rv.dv_spec_p, 
-                y_values=so.rv.dv_tot_p.tolist()
-            )
-            computed_data4 = ComputedData(
-                function_type='ccf'+session_id, 
-                x_values=so.obs.ccf_snr.value, 
-                y_values=so.obs.ccf_snr.value
-            )
-            computed_data5 = ComputedData(
-                function_type='plot'+session_id, 
-                x_values=so.rv.order_cen_lam, 
-                y_values=so.rv.dv_vals_p )
-            db.session.add(computed_data)
-            db.session.add(computed_data2)
-            db.session.add(computed_data3)
-            db.session.add(computed_data4)
-            db.session.add(computed_data5)
+        # snr_off or snr_on bc code works either way the same
+        computed_data = ComputedData(
+            function_type='snr'+session_id, 
+            x_values=so.obs.v[so.obs.ind_filter], 
+            y_values=so.obs.snr[so.obs.ind_filter]
+        )
+        computed_data2 = ComputedData(
+            function_type='sr'+session_id, 
+            x_values=so.inst.xtransmit, 
+            y_values=so.inst.ytransmit)
+        computed_data3 = ComputedData(
+            function_type='rv'+session_id, 
+            x_values=so.obs.rv_order, 
+            y_values=so.obs.rv_tot.tolist()
+        )
+        computed_data4 = ComputedData(
+            function_type='ccf'+session_id, 
+            x_values=so.obs.ccf_snr.value, 
+            y_values=so.obs.ccf_snr.value
+        )
+        computed_data5 = ComputedData(
+            function_type='plot'+session_id, 
+            x_values=so.inst.order_cens, 
+            y_values=so.obs.rv_order)
+        db.session.add(computed_data)
+        db.session.add(computed_data2)
+        db.session.add(computed_data3)
+        db.session.add(computed_data4)
+        db.session.add(computed_data5)
 
-            db.session.commit()
-        if data['run_mode'] == 'snr_on':
-            computed_data = ComputedData(
-                function_type='snr'+session_id, 
-                x_values=so.obs.v[so.obs.ind_filter], 
-                y_values=so.obs.snr
-            )
-            computed_data2 = ComputedData(
-                function_type='sr'+session_id, 
-                x_values=so.inst.xtransmit, 
-                y_values=so.inst.ytransmit )
-            computed_data3 = ComputedData(
-                function_type='rv'+session_id, 
-                x_values=so.rv.dv_spec, 
-                y_values=so.rv.dv_tot.tolist()
-            )
-            computed_data5 = ComputedData(
-                function_type='plot'+session_id, 
-                x_values=so.rv.order_cen_lam, 
-                y_values=so.rv.dv_vals )
-            db.session.add(computed_data)
-            db.session.add(computed_data2)
-            db.session.add(computed_data3)
-            db.session.add(computed_data5)
-
-            db.session.commit()
-
-    # rid of old config files while we're at it
+        db.session.commit()
+        
     delete_old_cfg_files()
 
 @app.route('/task/<task_id>', methods=['GET'])
@@ -789,62 +763,37 @@ def hispec_async_fill_data(data,session_id):
     check_and_clear_db()
 
     with app.app_context():
-        if data['run_mode'] == 'snr_off':
-            computed_data = ComputedData(
-                function_type='snr'+session_id, 
-                x_values=so.obs.v[so.obs.ind_filter], 
-                y_values=so.obs.p_snr
-            )
-            computed_data2 = ComputedData(
-                function_type='sr'+session_id, 
-                x_values=so.inst.xtransmit, 
-                y_values=so.inst.ytransmit)
-            computed_data3 = ComputedData(
-                function_type='rv'+session_id, 
-                x_values=so.rv.dv_spec_p, 
-                y_values=so.rv.dv_tot_p.tolist()
-            )
-            computed_data4 = ComputedData(
-                function_type='ccf'+session_id, 
-                x_values=so.obs.ccf_snr.value, 
-                y_values=so.obs.ccf_snr.value
-            )
-            computed_data5 = ComputedData(
-                function_type='plot'+session_id, 
-                x_values=so.rv.order_cen_lam, 
-                y_values=so.rv.dv_vals_p )
-            db.session.add(computed_data)
-            db.session.add(computed_data2)
-            db.session.add(computed_data3)
-            db.session.add(computed_data4)
-            db.session.add(computed_data5)
+        # snr_off or snr_on bc code works either way the same
+        computed_data = ComputedData(
+            function_type='snr'+session_id, 
+            x_values=so.obs.v[so.obs.ind_filter], 
+            y_values=so.obs.snr[so.obs.ind_filter]
+        )
+        computed_data2 = ComputedData(
+            function_type='sr'+session_id, 
+            x_values=so.inst.xtransmit, 
+            y_values=so.inst.ytransmit)
+        computed_data3 = ComputedData(
+            function_type='rv'+session_id, 
+            x_values=so.obs.rv_order, 
+            y_values=so.obs.rv_tot.tolist()
+        )
+        computed_data4 = ComputedData(
+            function_type='ccf'+session_id, 
+            x_values=so.obs.ccf_snr.value, 
+            y_values=so.obs.ccf_snr.value
+        )
+        computed_data5 = ComputedData(
+            function_type='plot'+session_id, 
+            x_values=so.inst.order_cens, 
+            y_values=so.obs.rv_order)
+        db.session.add(computed_data)
+        db.session.add(computed_data2)
+        db.session.add(computed_data3)
+        db.session.add(computed_data4)
+        db.session.add(computed_data5)
 
-            db.session.commit()
-        if data['run_mode'] == 'snr_on':
-            computed_data = ComputedData(
-                function_type='snr'+session_id, 
-                x_values=so.obs.v[so.obs.ind_filter], 
-                y_values=so.obs.snr
-            )
-            computed_data2 = ComputedData(
-                function_type='sr'+session_id, 
-                x_values=so.inst.xtransmit, 
-                y_values=so.inst.ytransmit)
-            computed_data3 = ComputedData(
-                function_type='rv'+session_id, 
-                x_values=so.rv.dv_spec, 
-                y_values=so.rv.dv_tot.tolist()
-            )
-            computed_data5 = ComputedData(
-                function_type='plot'+session_id, 
-                x_values=so.rv.order_cen_lam, 
-                y_values=so.rv.dv_vals )
-            db.session.add(computed_data)
-            db.session.add(computed_data2)
-            db.session.add(computed_data3)
-            db.session.add(computed_data5)
-
-            db.session.commit()
+        db.session.commit()
     delete_old_cfg_files()
 
 @app.route('/hispec_task/<task_id>', methods=['GET'])
