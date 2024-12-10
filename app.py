@@ -119,6 +119,7 @@ def define_config_file(data,instrument):
                 ,'skypath':DATA_DIR + 'sky/','airmass':airmass,'pwv':data['pwv'],'seeing':data['atmospheric_conditions'],
                 'zenith':data['zenith_angle']}
     config['inst']={'transmission_path':DATA_DIR + 'instrument/%s/throughput/' %instrument,
+                    'order_bounds_file' : DATA_DIR + 'instrument/%s/order_bounds.csv'%instrument,
                     'atm':'0',
                     'adc':'0',
                     'l0':'500',
