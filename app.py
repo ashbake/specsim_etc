@@ -73,7 +73,7 @@ def delete_old_cfg_files():
 
 def check_and_clear_db():
     try:
-        if os.path.getsize('/scr3/specsim/user_data/data.db') > 5 * (1024**3):  # 5GB
+        if os.path.getsize(BASE_DIR + 'data.db') > 5 * (1024**3):  # 5GB
             with app.app_context():
                 ComputedData.query.delete()
                 db.session.commit()
@@ -118,8 +118,8 @@ def define_config_file(data,instrument):
     config['tel']={'telluric_file':DATA_DIR + 'telluric/psg_out_2020.08.02_l0_800nm_l1_2700nm_res_0.001nm_lon_204.53_lat_19.82_pres_0.5826.fits'
                 ,'skypath':DATA_DIR + 'sky/','airmass':airmass,'pwv':data['pwv'],'seeing':data['atmospheric_conditions'],
                 'zenith':data['zenith_angle']}
-    config['inst']={'transmission_path':DATA_DIR + 'instrument/%s/throughput/' %instrument,
-                    'order_bounds_file' : DATA_DIR + 'instrument/%s/order_bounds.csv'%instrument,
+    config['inst']={'transmission_path': DATA_DIR + 'instrument/%s/throughput/' %instrument,
+                    'order_bounds_file': DATA_DIR + 'instrument/%s/order_bounds.csv'%instrument,
                     'atm':'0',
                     'adc':'0',
                     'l0':'500',
