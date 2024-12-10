@@ -20,6 +20,7 @@ from specsim.objects import load_object
 from specsim.load_inputs import fill_data
 from specsim.functions import *
 
+sys.path.append('./templates/')
 from flask import Flask, render_template, request, jsonify, Response,send_from_directory, session
 
 import numpy as np
@@ -31,7 +32,7 @@ from celery import Celery
 BASE_DIR = "/data/abaker/specsim_etc/user_data/" # location of user_data on meridian
 DATA_DIR = '/data/abaker/data/'                  # location of specsim data on meridian
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='./templates/')
 def make_celery(app):
     celery = Celery(
         app.import_name,
@@ -157,8 +158,8 @@ def define_config_file(data,instrument):
     #                'cal':'0.01'}
     #config['etc']={'ccf':'no',
     #                    'ccfetc':'open',
-    #                    'goal_ccf':data['goal_ccf'],
-    #                    'SN':data['target_snr'],
+    #                    'goal_ccf':data['goal_ccf'], 
+    #                    'SN':data['target_snr'], # TODO finish etc debugging and hispec debug
     #                    'texp_frame':data['frame_exposure_time']}
     #config['rv']={'water_only':'False',
     #                'line_spacing':'None',
@@ -171,7 +172,7 @@ def define_config_file(data,instrument):
     # individual things for instrument type easier to define individually
     if instrument =='hispec':
         config['ao']['ttdynamic_set'] = DATA_DIR +'instrument/%s/ao/TT_dynamic.csv'%instrument
-        config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HOwfe.csv'%instrument
+        config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HO_wfe.csv'%instrument
         config['ao']['lo_wfe']        ='30'
         config['ao']['defocus']       ='25'
         #config['coron']['nactuators'] = '30',
@@ -181,7 +182,7 @@ def define_config_file(data,instrument):
         config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HOWFE_NFIRAOS_091123.csv'%instrument
         config['ao']['lo_wfe']        ='10'
         config['ao']['defocus']       ='10'
-        #config['coron']['nactuators'] ='58'
+        #config['coron']['nactuators'] ='58' #TODO incorporate this into code input
         #config['coron']['fiber_contrast_gain'] = '10.'
 
     # if off axis, define planet stuff
