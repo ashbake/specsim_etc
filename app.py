@@ -247,8 +247,8 @@ def async_fill_data(data,session_id):
         )
         computed_data4 = ComputedData(
             function_type='ccf'+session_id, 
-            x_values=so.obs.ccf_snr.value, 
-            y_values=so.obs.ccf_snr.value
+            x_values=round(so.obs.ccf_snr,2), 
+            y_values=round(so.obs.ccf_snr,2)
         )
         computed_data5 = ComputedData(
             function_type='plot'+session_id, 
@@ -261,7 +261,7 @@ def async_fill_data(data,session_id):
         db.session.add(computed_data5)
 
         db.session.commit()
-        
+
     delete_old_cfg_files()
 
 @app.route('/task/<task_id>', methods=['GET'])
