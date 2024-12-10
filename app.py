@@ -190,8 +190,8 @@ def define_config_file(data,instrument):
         else:
             plan_temp = str(round(float(data['planet_temperature'])/ 200) * 200)
         
-        config['plan']={'phoenix_folder':DATA_DIR + '/phoenix/Z-0.0/','sonora_folder':DATA_DIR + 'sonora/','vsini':data['planet_vsini']
-                        ,'rv':'0','teff':plan_temp,'mag':data['planet_magnitude'],'ang_sep':data['ang_sep']}
+        config['stel']={'pl_vsini':data['planet_vsini'],'pl_rv':'0','pl_teff':plan_temp,
+                        'pl_mag':data['planet_magnitude'],'pl_sep':data['ang_sep']}
     else:
         # make sure planet separation is 0 if not in off axis mode (after i edit code back to my own)
         config['stel']['vsini'] = data['vsini'] # these are only defined for star for on axis case
