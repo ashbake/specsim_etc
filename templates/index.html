@@ -398,6 +398,7 @@ function submitData2() {
     });
 }
 function fetchPlotdata() {
+    // ccf_snr_get_number off axis plot
     $("#PlotSection").show();
     $("#CCFSection").show();
     $.ajax({
@@ -427,7 +428,7 @@ function fetchPlotdata() {
 
         },
         error: function(error) {
-            alert("Error occurred fetching plot!");
+            alert("Error occurred fetching plot! line 431");
         }
     });
 }
@@ -460,7 +461,7 @@ function fetchPlotdata2() {
     });
         },
         error: function(error) {
-            alert("Error occurred fetching plot!");
+            alert("Error occurred fetching plot! line 464");
         }
     });
 }

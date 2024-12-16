@@ -21,7 +21,7 @@ from specsim.load_inputs import fill_data
 from specsim.functions import *
 
 sys.path.append('./templates/')
-from flask import Flask, render_template, request, jsonify, Response,send_from_directory, session
+from flask import Flask, render_template, request, jsonify, Response, session
 
 import numpy as np
 import configparser
