@@ -14,11 +14,6 @@ matplotlib.rc('font', **font)
 
 # Load path to package and load a few useful things
 print(os.getcwd())
-# goal is to make this take the github version!
-sys.path.append('/data/abaker/specsim/')
-from specsim.objects import load_object
-from specsim.load_inputs import fill_data
-from specsim.functions import *
 
 sys.path.append('./templates/')
 from flask import Flask, render_template, request, jsonify, Response, session
@@ -52,7 +47,16 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = "super secret key"
 db = SQLAlchemy(app)
 
+# install specsim
+sys.path.append('/data/abaker/specsim/')
+from specsim.objects import load_object
+from specsim.load_inputs import fill_data
+from specsim.functions import *
+
+
 class ComputedData(db.Model):
+    # This class is used to store data from runs and query it out later
+    # populate it with exact data will be downloading
     id = db.Column(db.Integer, primary_key=True)
     function_type = db.Column(db.String(20))
     x_values = db.Column(db.PickleType)  # Storing numpy array
@@ -232,34 +236,34 @@ def async_fill_data(data,session_id):
     # store outputs into database
     with app.app_context():
         # snr_off or snr_on bc code works either way the same
-        computed_data = ComputedData(
+        computed_data_snr = ComputedData(
             function_type='snr'+session_id, 
             x_values=so.obs.v[so.obs.ind_filter], 
             y_values=so.obs.snr[so.obs.ind_filter]
         )
-        computed_data2 = ComputedData(
+        computed_data_sr = ComputedData(
             function_type='sr'+session_id, 
             x_values=so.inst.xtransmit, 
             y_values=so.inst.ytransmit)
-        computed_data3 = ComputedData(
+        computed_data_rv = ComputedData(
             function_type='rv'+session_id, 
             x_values=so.obs.rv_order, 
             y_values=so.obs.rv_tot.tolist()
         )
-        computed_data4 = ComputedData(
+        computed_data_ccf = ComputedData(
             function_type='ccf'+session_id, 
             x_values=round(so.obs.ccf_snr,2), 
             y_values=round(so.obs.ccf_snr,2)
         )
-        computed_data5 = ComputedData(
+        computed_data_plot = ComputedData(
             function_type='plot'+session_id, 
             x_values=so.inst.order_cens, 
             y_values=so.obs.rv_order)
-        db.session.add(computed_data)
-        db.session.add(computed_data2)
-        db.session.add(computed_data3)
-        db.session.add(computed_data4)
-        db.session.add(computed_data5)
+        db.session.add(computed_data_snr)
+        db.session.add(computed_data_sr)
+        db.session.add(computed_data_rv)
+        db.session.add(computed_data_ccf)
+        db.session.add(computed_data_plot) # dont really need plot, can just pull from rv
 
         db.session.commit()
 
@@ -311,75 +315,42 @@ def taskstatus(task_id):
 
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
-    if session['id_1'][16:]== 'snr_off':
-        function_type1 = session['id_1'][16:]
+    # Retrieve the most recent x and y values for the given function type from the database
+    computed_data_rv   = ComputedData.query.filter_by(function_type='rv'+session['id_1']).order_by(ComputedData.id.desc()).first()
+    computed_data_plot = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
+    computed_data_snr  = ComputedData.query.filter_by(function_type='snr'+session['id_1']).order_by(ComputedData.id.desc()).first()
+
+    # Convert data to lists
+    x_rv   = np.array(computed_data_rv.x_values).flatten().tolist()
+    y_rv   = np.array(computed_data_rv.y_values).flatten().tolist()
+    x_plot = np.array(computed_data_plot.x_values).flatten().tolist()
+    y_plot = np.array(computed_data_plot.y_values).flatten().tolist()
+    x_snr  = np.array(computed_data_snr.x_values).flatten().tolist()
+    y_snr  = np.array(computed_data_snr.y_values).flatten().tolist()
+    if session['id_1'][16:] =='snr_off':
+        computed_data_ccf = ComputedData.query.filter_by(function_type='ccf'+session['id_1']).order_by(ComputedData.id.desc()).first()
+        x_ccf = np.array(computed_data_ccf.x_values).flatten().tolist() # only one unique ccf value
+
+    # Create CSV data
+    csv_data = "wavelength(nm),snr,ccf,dv_spec,dv_total,order_cen,dv_vals\n"
+    for i in range(max(len(x_rv), len(y_rv),len(x_plot), len(x_snr), len(y_snr))):
+        val_x_rv = x_rv[i] if i < len(x_rv) else 'N/A'
+        val_y_rv = y_rv[i] if i < len(y_rv) else 'N/A'
+        val_x_snr = x_snr[i] if i < len(x_snr) else 'N/A'
+        val_y_snr = y_snr[i] if i < len(y_snr) else 'N/A'
+        val_x_plot = x_plot[i] if i < len(x_plot) else 'N/A'
+        val_y_plot = y_plot[i] if i < len(y_plot) else 'N/A'
+        if session['id_1'][16:] =='snr_off':
+            val_xccf = x_ccf[i] if i < len(x_ccf) else 'N/A' # put this into header later for every snr data option
         
-        # Retrieve the most recent x and y values for the given function type from the database
-        computed_data = ComputedData.query.filter_by(function_type='rv'+session['id_1']).order_by(ComputedData.id.desc()).first()
-        computed_data3 = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
-        computed_data2 = ComputedData.query.filter_by(function_type='snr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-        computed_data5 = ComputedData.query.filter_by(function_type='ccf'+session['id_1']).order_by(ComputedData.id.desc()).first()
 
-        # Convert data to lists
-        x = np.array(computed_data2.x_values).flatten().tolist()
-        y = np.array(computed_data2.y_values).flatten().tolist()
-        x3 = np.array(computed_data5.x_values).flatten().tolist()
-        x4 = np.array(computed_data3.x_values).flatten().tolist()
-        y4 = np.array(computed_data3.y_values).flatten().tolist()
-        x5 = np.array(computed_data.x_values).flatten().tolist()
-        y5 = np.array(computed_data.y_values).flatten().tolist()
+        csv_data += "{},{},{},{},{},{}\\n".format(val_x_rv, val_y_rv, val_x_snr, val_y_snr, val_x_plot,val_y_plot)
 
-        # Create CSV data
-        csv_data = "wavelength(nm),snr,ccf,dv_spec,dv_total,order_cen,dv_vals\n"
-        for i in range(max(len(x), len(y),len(x3), len(x4), len(y4), len(x5),len(y5))):
-            val_x = x[i] if i < len(x) else 'N/A'
-            val_y = y[i] if i < len(y) else 'N/A'
-            val_x3 = x3[i] if i < len(x3) else 'N/A'
-            val_x4 = x4[i] if i < len(x4) else 'N/A'
-            val_y4 = y4[i] if i < len(y4) else 'N/A'
-            val_x5 = x5[i] if i < len(x5) else 'N/A'
-            val_y5 = y5[i] if i < len(y5) else 'N/A'
-            
-            csv_data += "{},{},{},{},{},{},{}\\n".format(val_x, val_y, val_x3, val_x4, val_y4, val_x5, val_y5)
-
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename={}.csv".format(function_type1)}
-        )
-    elif session['id_1'][16:]== 'snr_on':
-        function_type1 = session['id_1'][16:]
-        
-        # Retrieve the most recent x and y values for the given function type from the database
-        computed_data = ComputedData.query.filter_by(function_type='rv'+session['id_1']).order_by(ComputedData.id.desc()).first()
-        computed_data3 = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
-        computed_data2 = ComputedData.query.filter_by(function_type='snr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-
-        # Convert data to lists
-        x = np.array(computed_data2.x_values).flatten().tolist()
-        y = np.array(computed_data2.y_values).flatten().tolist()
-        x4 = np.array(computed_data3.x_values).flatten().tolist()
-        y4 = np.array(computed_data3.y_values).flatten().tolist()
-        x5 = np.array(computed_data.x_values).flatten().tolist()
-        y5 = np.array(computed_data.y_values).flatten().tolist()
-
-        # Create CSV data
-        csv_data = "wavelength(nm),snr,dv_spec,dv_total,order_cen,dv_vals\n"
-        for i in range(max(len(x), len(y), len(x4), len(y4), len(x5),len(y5))):
-            val_x = x[i] if i < len(x) else 'N/A'
-            val_y = y[i] if i < len(y) else 'N/A'
-            val_x4 = x4[i] if i < len(x4) else 'N/A'
-            val_y4 = y4[i] if i < len(y4) else 'N/A'
-            val_x5 = x5[i] if i < len(x5) else 'N/A'
-            val_y5 = y5[i] if i < len(y5) else 'N/A'
-            
-            csv_data += "{},{},{},{},{},{}\n".format(val_x, val_y, val_x4, val_y4, val_x5, val_y5)
-
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename={}.csv".format(function_type1)}
-        )
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename={}.csv".format(session['id_1'][16:])}
+    )
 
 @app.route('/get_plot', methods=['GET'])
 def get_plot():
@@ -531,11 +502,11 @@ def new_async_task(data,session_id):
     check_and_clear_db()
 
     with app.app_context():
-        if data['run_mode'] == 'etc_off':
+        if data['run_mode'].startswith('etc'):
             computed_data = ComputedData(
                 function_type='etc'+session_id, 
-                x_values=so.etc.v[so.obs.ind_filter], 
-                y_values=so.etc.total_expt_filter
+                x_values=so.inst.order_cens, 
+                y_values=so.obs.etc_order_max
             )
             computed_data2 = ComputedData(
                 function_type='sr'+session_id, 
@@ -543,26 +514,12 @@ def new_async_task(data,session_id):
                 y_values=so.inst.ytransmit )
             computed_data4 = ComputedData(
                 function_type='etc_ccf'+session_id, 
-                x_values=so.obs.etc_ccf, 
-                y_values=so.obs.etc_ccf
+                x_values=so.obs.ccf_snr_etc, 
+                y_values=so.obs.ccf_snr_etc
             )
             db.session.add(computed_data)
             db.session.add(computed_data2)
             db.session.add(computed_data4)
-
-            db.session.commit()
-        if data['run_mode'] == 'etc_on':
-            computed_data = ComputedData(
-                function_type='etc'+session_id, 
-                x_values=so.etc.v[so.obs.ind_filter], 
-                y_values=so.etc.total_expt_s
-            )
-            computed_data2 = ComputedData(
-                function_type='sr'+session_id, 
-                x_values=so.inst.xtransmit, 
-                y_values=so.inst.ytransmit )
-            db.session.add(computed_data)
-            db.session.add(computed_data2)
 
             db.session.commit()
 
@@ -777,12 +734,12 @@ def hispec_async_fill_data(data,session_id):
         computed_data3 = ComputedData(
             function_type='rv'+session_id, 
             x_values=so.obs.rv_order, 
-            y_values=so.obs.rv_tot.tolist()
+            y_values=so.obs.rv_tot
         )
         computed_data4 = ComputedData(
             function_type='ccf'+session_id, 
-            x_values=so.obs.ccf_snr.value, 
-            y_values=so.obs.ccf_snr.value
+            x_values=so.obs.ccf_snr, 
+            y_values=so.obs.ccf_snr
         )
         computed_data5 = ComputedData(
             function_type='plot'+session_id, 
@@ -847,7 +804,7 @@ def hispec_download_csv():
         function_type1 = session['id_4'][16:]
         
         # Retrieve the most recent x and y values for the given function type from the database
-        computed_data = ComputedData.query.filter_by(function_type='rv'+session['id_4']).order_by(ComputedData.id.desc()).first()
+        rv_data = ComputedData.query.filter_by(function_type='rv'+session['id_4']).order_by(ComputedData.id.desc()).first()
         computed_data3 = ComputedData.query.filter_by(function_type='plot'+session['id_4']).order_by(ComputedData.id.desc()).first()
         computed_data2 = ComputedData.query.filter_by(function_type='snr'+session['id_4']).order_by(ComputedData.id.desc()).first()
         computed_data5 = ComputedData.query.filter_by(function_type='ccf'+session['id_4']).order_by(ComputedData.id.desc()).first()
@@ -858,8 +815,8 @@ def hispec_download_csv():
         x3 = np.array(computed_data5.x_values).flatten().tolist()
         x4 = np.array(computed_data3.x_values).flatten().tolist()
         y4 = np.array(computed_data3.y_values).flatten().tolist()
-        x5 = np.array(computed_data.x_values).flatten().tolist()
-        y5 = np.array(computed_data.y_values).flatten().tolist()
+        x_rv = np.array(computed_data.x_values).flatten().tolist()
+        y_rv = np.array(rv_data.y_values).flatten().tolist()
 
         # Create CSV data
         csv_data = "wavelength(nm),snr,ccf,dv_spec,dv_total,order_cen,dv_vals\n"
@@ -869,10 +826,10 @@ def hispec_download_csv():
             val_x3 = x3[i] if i < len(x3) else 'N/A'
             val_x4 = x4[i] if i < len(x4) else 'N/A'
             val_y4 = y4[i] if i < len(y4) else 'N/A'
-            val_x5 = x5[i] if i < len(x5) else 'N/A'
-            val_y5 = y5[i] if i < len(y5) else 'N/A'
+            val_x_rv = x_rv[i] if i < len(x5) else 'N/A'
+            val_y_rv = y_rv[i] if i < len(y5) else 'N/A'
             
-            csv_data += "{},{},{},{},{},{},{}\\n".format(val_x, val_y, val_x3, val_x4, val_y4, val_x5, val_y5)
+            csv_data += "{},{},{},{},{},{},{}\n".format(val_x, val_y, val_x3, val_x4, val_y4, val_x_rv, val_y_rv)
 
         return Response(
             csv_data,
