@@ -55,12 +55,18 @@ from specsim.functions import *
 
 
 class ComputedData(db.Model):
+    # DATA MODEL for data storage
     # This class is used to store data from runs and query it out later
     # populate it with exact data will be downloading
     id = db.Column(db.Integer, primary_key=True)
     function_type = db.Column(db.String(20))
     x_values = db.Column(db.PickleType)  # Storing numpy array
-    y_values = db.Column(db.PickleType)  # Storing numpy array
+    y_values = db.Column(db.PickleType)  
+    snr_x    = db.Column(db.PickleType)
+    snr_y    = db.Column(db.PickleType)
+    rv_x     = db.Column(db.PickleType)
+    rv_y     = db.Column(db.PickleType)
+    ccf_vals = db.Column(db.PickleType) # length 4 for each band
 
 # Create the table
 with app.app_context():
@@ -239,7 +245,12 @@ def async_fill_data(data,session_id):
         computed_data_snr = ComputedData(
             function_type='snr'+session_id, 
             x_values=so.obs.v[so.obs.ind_filter], 
-            y_values=so.obs.snr[so.obs.ind_filter]
+            y_values=so.obs.snr[so.obs.ind_filter],
+            snr_x   = so.obs.v[so.obs.ind_filter],
+            snr_y   = so.obs.snr[so.obs.ind_filter],
+            rv_x    = so.inst.order_cens,
+            rv_y    = so.obs.rv_order,
+            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
         )
         computed_data_sr = ComputedData(
             function_type='sr'+session_id, 
@@ -259,8 +270,12 @@ def async_fill_data(data,session_id):
             function_type='plot'+session_id, 
             x_values=so.inst.order_cens, 
             y_values=so.obs.rv_order)
-        db.session.add(computed_data_snr)
-        db.session.add(computed_data_sr)
+        
+        # add data to database then commit
+        # pretty sure this could be done by saving data to file
+        # then opening those files later but eh 
+        db.session.add(computed_data_snr) 
+        db.session.add(computed_data_sr)  
         db.session.add(computed_data_rv)
         db.session.add(computed_data_ccf)
         db.session.add(computed_data_plot) # dont really need plot, can just pull from rv
@@ -343,7 +358,6 @@ def download_csv():
         val_y_plot = y_plot[i] if i < len(y_plot) else 'N/A'
         if session['id_1'][16:] =='snr_off':
             val_xccf = x_ccf[i] if i < len(x_ccf) else 'N/A' # put this into header later for every snr data option
-        
 
         csv_data += "{},{}\\n".format(val_x_plot, val_y_plot)
 
@@ -358,7 +372,7 @@ def get_plot():
     # Fetch the latest data from the database
         if session['id_1'][16:]== 'snr_off':
             data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values # x trhoughput
+            x_values_sr = data_entry_sr.x_values # x throughput
             y_values_sr = data_entry_sr.y_values # y throughput
             data_entry_snr = ComputedData.query.filter_by(function_type='snr'+session['id_1']).order_by(ComputedData.id.desc()).first()
             x_values_snr = data_entry_snr.x_values # v
@@ -367,6 +381,7 @@ def get_plot():
             order_cens = data_entry.x_values # order cens
             dv_vals    = data_entry.y_values # rv order
             col_table = plt.get_cmap('Spectral_r')
+            
             fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
             plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
 
@@ -477,8 +492,7 @@ def ccf_snr_get_number():
     if data_entry:
         x_values = data_entry.x_values
         y_values = data_entry.y_values
-    my_number =y_values
-    return jsonify({"number": my_number})
+    return jsonify({"y_band_snr": y_values})
 
 ###########
 @celery.task
