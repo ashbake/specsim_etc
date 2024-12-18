@@ -194,6 +194,7 @@ def define_config_file(data,instrument):
         config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HOWFE_NFIRAOS_091123.csv'%instrument
         config['ao']['lo_wfe']        ='10'
         config['ao']['defocus']       ='10'
+        config['ao']['contrast_profile_path'] = DATA_DIR + 'instrument/%s/ao/contrastcurves/'%instrument
         #config['coron']['nactuators'] ='58' #TODO incorporate this into code input
         #config['coron']['fiber_contrast_gain'] = '10.'
 
@@ -252,8 +253,8 @@ def async_fill_data(data,session_id):
             snr_y   = so.obs.snr[so.obs.ind_filter],
             rv_x    = so.inst.order_cens,
             rv_y    = so.obs.rv_order,
-            thrpt_x = so.inst.x_transmit,
-            thrpt_y = so.inst.y_transmit,
+            thrpt_x = so.inst.xtransmit,
+            thrpt_y = so.inst.ytransmit,
             ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
         )
         
