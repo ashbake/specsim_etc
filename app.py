@@ -416,10 +416,10 @@ def get_plot():
 @app.route('/ccf_snr_get_number', methods=['GET'])
 def ccf_snr_get_number():
     data_out = ComputedData.query.filter_by(function_type='data'+session['id_1']).order_by(ComputedData.id.desc()).first()
-    return jsonify({"y_band_snr": data_out.ccf_vals[0], 
-                    "j_band_snr": data_out.ccf_vals[1],
-                    "h_band_snr": data_out.ccf_vals[2],
-                    "k_band_snr": data_out.ccf_vals[3],
+    return jsonify({"y_band_snr": round(data_out.ccf_vals[0],1), 
+                    "j_band_snr": round(data_out.ccf_vals[1],1),
+                    "h_band_snr": round(data_out.ccf_vals[2],1),
+                    "k_band_snr": round(data_out.ccf_vals[3],1),
                     })
 
 ###########
