@@ -374,7 +374,9 @@ def get_plot():
             axs[1].fill_between([1450,2400],0,1000,facecolor='gray',alpha=0.2)
             axs[1].fill_between([980,1330],0,1000,facecolor='gray',alpha=0.2)
             axs[1].grid('True')
-            axs[1].set_ylim(-0,3*np.nanmedian(dv_vals[np.where(~np.isinf(dv_vals))]))
+            max_y_lim = 3*np.nanmedian(dv_vals[np.where(~np.isinf(dv_vals))])
+            if max_y_lim ==np.nan: max_y_lim = 1
+            axs[1].set_ylim(-0,max_y_lim)
             axs[1].set_xlim(950,2400)
             axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
             axs[1].set_xlabel('Wavelength [nm]')
