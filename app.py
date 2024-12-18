@@ -66,6 +66,8 @@ class ComputedData(db.Model):
     snr_y    = db.Column(db.PickleType)
     rv_x     = db.Column(db.PickleType)
     rv_y     = db.Column(db.PickleType)
+    thrpt_x  = db.Column(db.PickleType)
+    thrpt_y  = db.Column(db.PickleType)
     ccf_vals = db.Column(db.PickleType) # length 4 for each band
 
 # Create the table
@@ -243,66 +245,20 @@ def async_fill_data(data,session_id):
     with app.app_context():
         # snr_off or snr_on bc code works either way the same
         computed_data_snr = ComputedData(
-            function_type='snr'+session_id, 
+            function_type='data'+session_id, 
             x_values=so.obs.v[so.obs.ind_filter], 
             y_values=so.obs.snr[so.obs.ind_filter],
             snr_x   = so.obs.v[so.obs.ind_filter],
             snr_y   = so.obs.snr[so.obs.ind_filter],
             rv_x    = so.inst.order_cens,
             rv_y    = so.obs.rv_order,
-            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
-        )
-        computed_data_sr = ComputedData(
-            function_type='sr'+session_id, 
-            x_values=so.inst.xtransmit, 
-            y_values=so.inst.ytransmit,
-            snr_x   = so.obs.v[so.obs.ind_filter],
-            snr_y   = so.obs.snr[so.obs.ind_filter],
-            rv_x    = so.inst.order_cens,
-            rv_y    = so.obs.rv_order,
-            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
-        )
-        computed_data_rv = ComputedData(
-            function_type='rv'+session_id, 
-            x_values=so.obs.rv_order, 
-            y_values=so.obs.rv_tot.tolist(),
-            snr_x   = so.obs.v[so.obs.ind_filter],
-            snr_y   = so.obs.snr[so.obs.ind_filter],
-            rv_x    = so.inst.order_cens,
-            rv_y    = so.obs.rv_order,
-            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
-
-        )
-        computed_data_ccf = ComputedData(
-            function_type='ccf'+session_id, 
-            x_values=round(so.obs.ccf_snr,2), 
-            y_values=round(so.obs.ccf_snr,2),
-            snr_x   = so.obs.v[so.obs.ind_filter],
-            snr_y   = so.obs.snr[so.obs.ind_filter],
-            rv_x    = so.inst.order_cens,
-            rv_y    = so.obs.rv_order,
-            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
-        )
-        computed_data_plot = ComputedData(
-            function_type='plot'+session_id, 
-            x_values=so.inst.order_cens, 
-            y_values=so.obs.rv_order,
-            snr_x   = so.obs.v[so.obs.ind_filter],
-            snr_y   = so.obs.snr[so.obs.ind_filter],
-            rv_x    = so.inst.order_cens,
-            rv_y    = so.obs.rv_order,
+            thrpt_x = so.inst.x_transmit,
+            thrpt_y = so.inst.y_transmit,
             ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
         )
         
-        # add data to database then commit
-        # pretty sure this could be done by saving data to file
-        # then opening those files later but eh 
+        # add data to database then commit.......pretty sure this could be done by saving data to file then opening those files later but eh 
         db.session.add(computed_data_snr) 
-        db.session.add(computed_data_sr)  
-        db.session.add(computed_data_rv)
-        db.session.add(computed_data_ccf)
-        db.session.add(computed_data_plot) # dont really need plot, can just pull from rv
-
         db.session.commit()
 
     delete_old_cfg_files()
@@ -393,129 +349,86 @@ def download_csv():
 @app.route('/get_plot', methods=['GET'])
 def get_plot():
     # Fetch the latest data from the database
-        if session['id_1'][16:]== 'snr_off':
-            data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values # x throughput
-            y_values_sr = data_entry_sr.y_values # y throughput
-            data_entry_snr = ComputedData.query.filter_by(function_type='snr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values # v
-            y_values_snr = data_entry_snr.y_values # snr
-            data_entry = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            order_cens = data_entry.x_values # order cens
-            dv_vals    = data_entry.y_values # rv order
-            col_table = plt.get_cmap('Spectral_r')
-            
-            fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
-            plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
+    data_out = ComputedData.query.filter_by(function_type='data'+session['id_1']).order_by(ComputedData.id.desc()).first()
+    order_cens = data_out.rv_x # order cens
+    dv_vals    = data_out.rv_y # rv order
+    
+    # setup plot
+    col_table = plt.get_cmap('Spectral_r')  
+    fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
+    plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
 
-            axs[1].plot([950,2400],[0.5,0.5],'k--',lw=0.7)
-            axs[1].fill_between([1450,2400],0,1000,facecolor='gray',alpha=0.2)
-            axs[1].fill_between([980,1330],0,1000,facecolor='gray',alpha=0.2)
-            axs[1].grid('True')
-            max_y_lim = 3*np.median(dv_vals[np.where(~np.isinf(dv_vals))])
-            if np.isnan(max_y_lim): max_y_lim = 1	
-            axs[1].set_ylim(-0,max_y_lim)
-            axs[1].set_xlim(950,2400)
-            axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
-            axs[1].set_xlabel('Wavelength [nm]')
+    axs[1].plot([950,2400],[0.5,0.5],'k--',lw=0.7)
+    axs[1].fill_between([1450,2400],0,1000,facecolor='gray',alpha=0.2)
+    axs[1].fill_between([980,1330],0,1000,facecolor='gray',alpha=0.2)
+    axs[1].grid('True')
+    max_rv_lim = 3*np.median(dv_vals[np.where(~np.isinf(dv_vals))])
+    if np.isnan(max_rv_lim): max_rv_lim = 1	
+    axs[1].set_ylim(-0,max_rv_lim)
+    axs[1].set_xlim(950,2400)
+    axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
+    axs[1].set_xlabel('Wavelength [nm]')
 
-            axs[0].set_ylabel('SNR')
-            axs[0].set_title('TMT-MODHIS, Off Axis')
-            axs[0].fill_between([980,1100],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(20+980,np.nanmax(y_values_snr), 'y')
-            axs[0].fill_between([1170,1327],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1170,np.nanmax(y_values_snr), 'J')
-            axs[0].fill_between([1490,1780],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1490,np.nanmax(y_values_snr), 'H')
-            axs[0].fill_between([1990,2460],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1990,np.nanmax(y_values_snr), 'K')
-            axs[0].grid('True')
-            ax2 = axs[0].twinx() 
-            ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
+    # plot SNR
+    axs[0].plot(data_out.snr_x,data_out.snr_y,zorder=200,label='SNR')
+    axs[0].set_ylabel('SNR')
+    max_y = np.nanmax(data_out.snr_y) * 1.1
+    axs[0].set_ylim(0, max_y)
+    axs[0].fill_between([980,1100],-1,max_y,facecolor='k',edgecolor='black',alpha=0.1)
+    axs[0].text(20+980,max_y, 'y')
+    axs[0].fill_between([1170,1327],-1,max_y,facecolor='k',edgecolor='black',alpha=0.1)
+    axs[0].text(50+1170,max_y, 'J')
+    axs[0].fill_between([1490,1780],-1,max_y,facecolor='k',edgecolor='black',alpha=0.1)
+    axs[0].text(50+1490,max_y, 'H')
+    axs[0].fill_between([1990,2460],-1,max_y,facecolor='k',edgecolor='black',alpha=0.1)
+    axs[0].text(50+1990,max_y, 'K')
+    axs[0].grid('True')
+    
+    # plot throughput on second axis
+    ax2 = axs[0].twinx() 
+    ax2.plot(data_out.thrpt_x,data_out.thrpt_y,'k',alpha=0.5,zorder=-100,label='Total Throughput')
+    ax2.set_ylabel('Total Throughput',fontsize=12)
+    
+    # plot RV, diff colors per order
+    for i,lam_cen in enumerate(order_cens):
+        wvl_norm = (lam_cen - 900.) / (2500. - 900.)
+        axs[1].plot(lam_cen,dv_vals[i],'o',zorder=100,color=col_table(wvl_norm),markeredgecolor='k')
+    # compute sub RV for text
+    sub_yj = dv_vals[np.where((dv_vals!=np.inf) & (order_cens < 1400))[0]]
+    sub_hk = dv_vals[np.where((dv_vals!=np.inf) & (order_cens > 1400))[0]]
+    dv_yj = 1. / (np.nansum(1./sub_yj**2.))**0.5	# 
+    dv_hk = 1. / (np.nansum(1./sub_hk**2.))**0.5	# 
+    dv_yj_tot = (0.5**2 +dv_yj**2.)**0.5	# 
+    dv_hk_tot = (0.5**2 +dv_hk**2.)**0.5	# # 
 
-            ax2.set_ylabel('Total Throughput',fontsize=12)
-            for i,lam_cen in enumerate(order_cens):
-                wvl_norm = (lam_cen - 900.) / (2500. - 900.)
-                axs[1].plot(lam_cen,dv_vals[i],'o',zorder=100,color=col_table(wvl_norm),markeredgecolor='k')
-            axs[0].plot(x_values_snr,y_values_snr,zorder=200,label='SNR')
-            sub_yj = dv_vals[np.where((dv_vals!=np.inf) & (order_cens < 1400))[0]]
-            sub_hk = dv_vals[np.where((dv_vals!=np.inf) & (order_cens > 1400))[0]]
-            dv_yj = 1. / (np.nansum(1./sub_yj**2.))**0.5	# 
-            dv_hk = 1. / (np.nansum(1./sub_hk**2.))**0.5	# 
-            dv_yj_tot = (0.5**2 +dv_yj**2.)**0.5	# 
-            dv_hk_tot = (0.5**2 +dv_hk**2.)**0.5	# # 
+    # Add text to plot
+    axs[1].text(1050,max_rv_lim/2,'$\sigma_{yJ}$=%s m/s'%round(dv_yj_tot,1),fontsize=12,zorder=101)
+    axs[1].text(1500,max_rv_lim/2,'$\sigma_{HK}$=%s m/s'%round(dv_hk_tot,1),fontsize=12,zorder=101)
+    axs[0].legend(fontsize=8,loc=2)
+    ax2.legend(fontsize=8,loc=1)
+    if session['id_1'][16:]== 'snr_off':
+        axs[0].set_title('TMT-MODHIS, Off Axis')
+    elif session['id_1'][16:]== 'snr_on':
+        axs[0].set_title('TMT-MODHIS, On Axis')
+    
+    # Save the plot to a BytesIO object
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close()
 
-            axs[1].text(1050,2*np.nanmedian(dv_vals),'$\sigma_{yJ}$=%sm/s'%round(dv_yj_tot,1),fontsize=12,zorder=101)
-            axs[1].text(1500,2*np.nanmedian(dv_vals),'$\sigma_{HK}$=%sm/s'%round(dv_hk_tot,1),fontsize=12,zorder=101)
-            ax2.legend(fontsize=8,loc=1)
-        elif session['id_1'][16:]== 'snr_on':
-            data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values
-            y_values_sr = data_entry_sr.y_values
-            data_entry_snr = ComputedData.query.filter_by(function_type='snr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values
-            y_values_snr = data_entry_snr.y_values
-            data_entry = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            order_cens = data_entry.x_values
-            dv_vals = data_entry.y_values
-            col_table = plt.get_cmap('Spectral_r')
-            fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
-            plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
-
-            axs[1].plot([950,2400],[0.5,0.5],'k--',lw=0.7)
-            axs[1].fill_between([1450,2400],0,1000,facecolor='gray',alpha=0.2)
-            axs[1].fill_between([980,1330],0,1000,facecolor='gray',alpha=0.2)
-            axs[1].grid('True')
-            axs[1].set_ylim(-0,3*np.nanmedian(dv_vals))
-            axs[1].set_xlim(950,2400)
-            axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
-            axs[1].set_xlabel('Wavelength [nm]')
-
-            axs[0].set_ylabel('SNR')
-            axs[0].set_title('TMT-MODHIS, On Axis')
-            axs[0].fill_between([980,1100],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(20+980,np.nanmax(y_values_snr), 'y')
-            axs[0].fill_between([1170,1327],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1170,np.nanmax(y_values_snr), 'J')
-            axs[0].fill_between([1490,1780],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1490,np.nanmax(y_values_snr), 'H')
-            axs[0].fill_between([1990,2460],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1990,np.nanmax(y_values_snr), 'K')
-            axs[0].grid('True')
-            ax2 = axs[0].twinx() 
-            ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
-            for i,lam_cen in enumerate(order_cens):
-                wvl_norm = (lam_cen - 900.) / (2500. - 900.)
-                axs[1].plot(lam_cen,dv_vals[i],'o',zorder=100,color=col_table(wvl_norm),markeredgecolor='k')
-            y_values_snr = [x if x >= 0 else 0 for x in y_values_snr] 
-            axs[0].plot(x_values_snr,y_values_snr,zorder=200,label='SNR')
-            sub_yj = dv_vals[np.where((dv_vals!=np.inf) & (order_cens < 1400))[0]]
-            sub_hk = dv_vals[np.where((dv_vals!=np.inf) & (order_cens > 1400))[0]]
-            dv_yj = 1. / (np.nansum(1./sub_yj**2.))**0.5	# 
-            dv_hk = 1. / (np.nansum(1./sub_hk**2.))**0.5	# 
-            dv_yj_tot = (0.5**2 +dv_yj**2.)**0.5	# 
-            dv_hk_tot = (0.5**2 +dv_hk**2.)**0.5	# # 
-
-            axs[1].text(1050,2*np.median(dv_vals),'$\sigma_{yJ}$=%sm/s'%round(dv_yj_tot,1),fontsize=12,zorder=101)
-            axs[1].text(1500,2*np.median(dv_vals),'$\sigma_{HK}$=%sm/s'%round(dv_hk_tot,1),fontsize=12,zorder=101)
-            ax2.legend(fontsize=8,loc=1)
-        # Save the plot to a BytesIO object
-        img = io.BytesIO()
-        plt.savefig(img, format='png')
-        img.seek(0)
-        plt.close()
-
-        # Encode the image to base64 and return as JSON
-        img_base64 = base64.b64encode(img.getvalue()).decode('utf-8')
-        return jsonify({'image': img_base64})
+    # Encode the image to base64 and return as JSON
+    img_base64 = base64.b64encode(img.getvalue()).decode('utf-8')
+    return jsonify({'image': img_base64})
 
 @app.route('/ccf_snr_get_number', methods=['GET'])
 def ccf_snr_get_number():
-    data_entry = ComputedData.query.filter_by(function_type='ccf'+session['id_1']).order_by(ComputedData.id.desc()).first()
-    if data_entry:
-        x_values = data_entry.x_values
-        y_values = data_entry.y_values
-    return jsonify({"y_band_snr": y_values})
+    data_out = ComputedData.query.filter_by(function_type='data'+session['id_1']).order_by(ComputedData.id.desc()).first()
+    return jsonify({"y_band_snr": data_out.ccf_vals[0], 
+                    "J_band_snr": data_out.ccf_vals[1],
+                    "H_band_snr": data_out.ccf_vals[2],
+                    "K_band_snr": data_out.ccf_vals[3],
+                    })
 
 ###########
 @celery.task
