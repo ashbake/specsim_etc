@@ -265,7 +265,7 @@ def async_fill_data(data,session_id):
         computed_data_rv = ComputedData(
             function_type='rv'+session_id, 
             x_values=so.obs.rv_order, 
-            y_values=so.obs.rv_tot.tolist()
+            y_values=so.obs.rv_tot.tolist(),
             snr_x   = so.obs.v[so.obs.ind_filter],
             snr_y   = so.obs.snr[so.obs.ind_filter],
             rv_x    = so.inst.order_cens,
