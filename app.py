@@ -255,21 +255,44 @@ def async_fill_data(data,session_id):
         computed_data_sr = ComputedData(
             function_type='sr'+session_id, 
             x_values=so.inst.xtransmit, 
-            y_values=so.inst.ytransmit)
+            y_values=so.inst.ytransmit,
+            snr_x   = so.obs.v[so.obs.ind_filter],
+            snr_y   = so.obs.snr[so.obs.ind_filter],
+            rv_x    = so.inst.order_cens,
+            rv_y    = so.obs.rv_order,
+            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
+        )
         computed_data_rv = ComputedData(
             function_type='rv'+session_id, 
             x_values=so.obs.rv_order, 
             y_values=so.obs.rv_tot.tolist()
+            snr_x   = so.obs.v[so.obs.ind_filter],
+            snr_y   = so.obs.snr[so.obs.ind_filter],
+            rv_x    = so.inst.order_cens,
+            rv_y    = so.obs.rv_order,
+            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
+
         )
         computed_data_ccf = ComputedData(
             function_type='ccf'+session_id, 
             x_values=round(so.obs.ccf_snr,2), 
-            y_values=round(so.obs.ccf_snr,2)
+            y_values=round(so.obs.ccf_snr,2),
+            snr_x   = so.obs.v[so.obs.ind_filter],
+            snr_y   = so.obs.snr[so.obs.ind_filter],
+            rv_x    = so.inst.order_cens,
+            rv_y    = so.obs.rv_order,
+            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
         )
         computed_data_plot = ComputedData(
             function_type='plot'+session_id, 
             x_values=so.inst.order_cens, 
-            y_values=so.obs.rv_order)
+            y_values=so.obs.rv_order,
+            snr_x   = so.obs.v[so.obs.ind_filter],
+            snr_y   = so.obs.snr[so.obs.ind_filter],
+            rv_x    = so.inst.order_cens,
+            rv_y    = so.obs.rv_order,
+            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
+        )
         
         # add data to database then commit
         # pretty sure this could be done by saving data to file
