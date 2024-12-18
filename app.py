@@ -345,7 +345,7 @@ def download_csv():
             val_xccf = x_ccf[i] if i < len(x_ccf) else 'N/A' # put this into header later for every snr data option
         
 
-        csv_data += "{},{},{},{},{},{}\\n".format(val_x_rv, val_y_rv, val_x_snr, val_y_snr, val_x_plot, val_y_plot)
+        csv_data += "{},{}\\n".format(val_x_plot, val_y_plot)
 
     return Response(
         csv_data,
@@ -364,10 +364,8 @@ def get_plot():
             x_values_snr = data_entry_snr.x_values # v
             y_values_snr = data_entry_snr.y_values # snr
             data_entry = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values = data_entry.x_values # order cens
-            y_values = data_entry.y_values # rv order
-            order_cens=x_values
-            dv_vals   = y_values
+            order_cens = data_entry.x_values # order cens
+            dv_vals    = data_entry.y_values # rv order
             col_table = plt.get_cmap('Spectral_r')
             fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
             plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
