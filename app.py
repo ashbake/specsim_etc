@@ -349,30 +349,19 @@ def get_plot():
     fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
     plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
 
-    axs[1].plot([950,2400],[0.5,0.5],'k--',lw=0.7)
-    axs[1].fill_between([1450,2400],0,1000,facecolor='gray',alpha=0.2)
-    axs[1].fill_between([980,1330],0,1000,facecolor='gray',alpha=0.2)
-    axs[1].grid('True')
-    max_rv_lim = 3*np.median(dv_vals[np.where(~np.isinf(dv_vals))])
-    if np.isnan(max_rv_lim): max_rv_lim = 1	
-    axs[1].set_ylim(-0,max_rv_lim)
-    axs[1].set_xlim(950,2400)
-    axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
-    axs[1].set_xlabel('Wavelength [nm]')
-
     # plot SNR
     axs[0].plot(data_out.snr_x,data_out.snr_y,zorder=200,label='SNR')
     axs[0].set_ylabel('SNR')
     max_y = np.nanmax(data_out.snr_y) * 1.1
     axs[0].set_ylim(0, max_y)
     axs[0].fill_between([980,1100],-1,max_y,facecolor='k',edgecolor='black',alpha=0.1)
-    axs[0].text(20+980,max_y, 'y')
+    axs[0].text(20+980,0.7*max_y, 'y')
     axs[0].fill_between([1170,1327],-1,max_y,facecolor='k',edgecolor='black',alpha=0.1)
-    axs[0].text(50+1170,max_y, 'J')
+    axs[0].text(50+1170,0.7*max_y, 'J')
     axs[0].fill_between([1490,1780],-1,max_y,facecolor='k',edgecolor='black',alpha=0.1)
-    axs[0].text(50+1490,max_y, 'H')
+    axs[0].text(50+1490,0.7*max_y, 'H')
     axs[0].fill_between([1990,2460],-1,max_y,facecolor='k',edgecolor='black',alpha=0.1)
-    axs[0].text(50+1990,max_y, 'K')
+    axs[0].text(50+1990,0.7*max_y, 'K')
     axs[0].grid('True')
     
     # plot throughput on second axis
@@ -384,6 +373,16 @@ def get_plot():
     for i,lam_cen in enumerate(order_cens):
         wvl_norm = (lam_cen - 900.) / (2500. - 900.)
         axs[1].plot(lam_cen,dv_vals[i],'o',zorder=100,color=col_table(wvl_norm),markeredgecolor='k')
+    
+    max_rv_lim = 3*np.median(dv_vals[np.where(~np.isinf(dv_vals))])
+    if np.isnan(max_rv_lim): max_rv_lim = 1	
+    axs[1].plot([950,2400],[0.5,0.5],'k--',lw=0.7)
+    axs[1].fill_between([1450,2400],0,max_rv_lim,facecolor='gray',alpha=0.2)
+    axs[1].fill_between([980,1330],0,max_rv_lim,facecolor='gray',alpha=0.2)
+    axs[1].grid('True')
+    axs[1].set_ylim(-0,max_rv_lim)
+    axs[1].set_xlim(950,2400)
+
     # compute sub RV for text
     sub_yj = dv_vals[np.where((dv_vals!=np.inf) & (order_cens < 1400))[0]]
     sub_hk = dv_vals[np.where((dv_vals!=np.inf) & (order_cens > 1400))[0]]
@@ -395,6 +394,8 @@ def get_plot():
     # Add text to plot
     axs[1].text(1050,max_rv_lim/2,'$\sigma_{yJ}$=%s m/s'%round(dv_yj_tot,1),fontsize=12,zorder=101)
     axs[1].text(1500,max_rv_lim/2,'$\sigma_{HK}$=%s m/s'%round(dv_hk_tot,1),fontsize=12,zorder=101)
+    axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
+    axs[1].set_xlabel('Wavelength [nm]')
     axs[0].legend(fontsize=8,loc=2)
     ax2.legend(fontsize=8,loc=1)
     if session['id_1'][16:]== 'snr_off':
@@ -416,9 +417,9 @@ def get_plot():
 def ccf_snr_get_number():
     data_out = ComputedData.query.filter_by(function_type='data'+session['id_1']).order_by(ComputedData.id.desc()).first()
     return jsonify({"y_band_snr": data_out.ccf_vals[0], 
-                    "J_band_snr": data_out.ccf_vals[1],
-                    "H_band_snr": data_out.ccf_vals[2],
-                    "K_band_snr": data_out.ccf_vals[3],
+                    "j_band_snr": data_out.ccf_vals[1],
+                    "h_band_snr": data_out.ccf_vals[2],
+                    "k_band_snr": data_out.ccf_vals[3],
                     })
 
 ###########
