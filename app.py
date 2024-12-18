@@ -285,8 +285,9 @@ def submit_data():
     formatted_time = current_time.strftime('%Y%m%d%H%M%S%f')
     time_index = str(formatted_time)
     data = request.json  
-    task = async_fill_data.apply_async(args=[data,time_index[:15]+'3'+data['run_mode']])
+    # define session id
     session['id_1']=time_index[:15]+'3'+ data['run_mode']
+    task = async_fill_data.apply_async(args=[data,session['id_1']])
     print(session['id_1'])
     # Process the received data as required
     # For now, just print it to the console
@@ -344,7 +345,7 @@ def download_csv():
             val_xccf = x_ccf[i] if i < len(x_ccf) else 'N/A' # put this into header later for every snr data option
         
 
-        csv_data += "{},{},{},{},{},{}\\n".format(val_x_rv, val_y_rv, val_x_snr, val_y_snr, val_x_plot,val_y_plot)
+        csv_data += "{},{},{},{},{},{}\\n".format(val_x_rv, val_y_rv, val_x_snr, val_y_snr, val_x_plot, val_y_plot)
 
     return Response(
         csv_data,
@@ -357,16 +358,16 @@ def get_plot():
     # Fetch the latest data from the database
         if session['id_1'][16:]== 'snr_off':
             data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values
-            y_values_sr = data_entry_sr.y_values
+            x_values_sr = data_entry_sr.x_values # x trhoughput
+            y_values_sr = data_entry_sr.y_values # y throughput
             data_entry_snr = ComputedData.query.filter_by(function_type='snr'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values
-            y_values_snr = data_entry_snr.y_values
+            x_values_snr = data_entry_snr.x_values # v
+            y_values_snr = data_entry_snr.y_values # snr
             data_entry = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values = data_entry.x_values
-            y_values = data_entry.y_values
+            x_values = data_entry.x_values # order cens
+            y_values = data_entry.y_values # rv order
             order_cens=x_values
-            dv_vals = y_values
+            dv_vals   = y_values
             col_table = plt.get_cmap('Spectral_r')
             fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
             plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
@@ -375,7 +376,7 @@ def get_plot():
             axs[1].fill_between([1450,2400],0,1000,facecolor='gray',alpha=0.2)
             axs[1].fill_between([980,1330],0,1000,facecolor='gray',alpha=0.2)
             axs[1].grid('True')
-            axs[1].set_ylim(-0,3*np.nanmedian(dv_vals))
+            axs[1].set_ylim(-0,3*np.nanmedian(dv_vals[np.where(~np.isinf(dv_vals))]))
             axs[1].set_xlim(950,2400)
             axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
             axs[1].set_xlabel('Wavelength [nm]')
@@ -417,10 +418,8 @@ def get_plot():
             x_values_snr = data_entry_snr.x_values
             y_values_snr = data_entry_snr.y_values
             data_entry = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
-            x_values = data_entry.x_values
-            y_values = data_entry.y_values
-            order_cens=x_values
-            dv_vals = y_values
+            order_cens = data_entry.x_values
+            dv_vals = data_entry.y_values
             col_table = plt.get_cmap('Spectral_r')
             fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
             plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
@@ -436,14 +435,14 @@ def get_plot():
 
             axs[0].set_ylabel('SNR')
             axs[0].set_title('TMT-MODHIS, On Axis')
-            axs[0].fill_between([980,1100],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(20+980,np.max(y_values_snr), 'y')
-            axs[0].fill_between([1170,1327],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1170,np.max(y_values_snr), 'J')
-            axs[0].fill_between([1490,1780],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1490,np.max(y_values_snr), 'H')
-            axs[0].fill_between([1990,2460],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1990,np.max(y_values_snr), 'K')
+            axs[0].fill_between([980,1100],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
+            axs[0].text(20+980,np.nanmax(y_values_snr), 'y')
+            axs[0].fill_between([1170,1327],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
+            axs[0].text(50+1170,np.nanmax(y_values_snr), 'J')
+            axs[0].fill_between([1490,1780],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
+            axs[0].text(50+1490,np.nanmax(y_values_snr), 'H')
+            axs[0].fill_between([1990,2460],0,np.nanmax(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
+            axs[0].text(50+1990,np.nanmax(y_values_snr), 'K')
             axs[0].grid('True')
             ax2 = axs[0].twinx() 
             ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
@@ -541,8 +540,8 @@ def etc_snr_on_submit_data():
     formatted_time = current_time.strftime('%Y%m%d%H%M%S%f')
     time_index = str(formatted_time)
     data = request.json
-    task = new_async_task.apply_async(args=[data,time_index[:15]+'4'+data['run_mode']])
     session['id_2']=time_index[:15]+'4'+ data['run_mode']
+    task = new_async_task.apply_async(args=[data,session['id_2']])
     print(session['id_2'])
     # Process the received data as required
     # For now, just print it to the console
@@ -770,8 +769,8 @@ def hispec_submit_data():
     formatted_time = current_time.strftime('%Y%m%d%H%M%S%f')
     time_index = str(formatted_time)
     data = request.json  
-    task = hispec_async_fill_data.apply_async(args=[data,time_index[:15]+'1'+data['run_mode']])
-    session['id_4']=time_index[:15]+'1'+ data['run_mode']
+    session['id_4']=time_index[:15]+'1'+ data['run_mode'] # why is this 4 and iter is 1
+    task = hispec_async_fill_data.apply_async(args=[data,session['id_4']])
     print(session['id_4'])
     # Process the received data as required
     # For now, just print it to the console
