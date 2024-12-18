@@ -312,34 +312,24 @@ def taskstatus(task_id):
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
     # Retrieve the most recent x and y values for the given function type from the database
-    computed_data_rv   = ComputedData.query.filter_by(function_type='rv'+session['id_1']).order_by(ComputedData.id.desc()).first()
-    computed_data_plot = ComputedData.query.filter_by(function_type='plot'+session['id_1']).order_by(ComputedData.id.desc()).first()
-    computed_data_snr  = ComputedData.query.filter_by(function_type='snr'+session['id_1']).order_by(ComputedData.id.desc()).first()
+    computed_data  = ComputedData.query.filter_by(function_type='data'+session['id_1']).order_by(ComputedData.id.desc()).first()
 
     # Convert data to lists
-    x_rv   = np.array(computed_data_rv.x_values).flatten().tolist()
-    y_rv   = np.array(computed_data_rv.y_values).flatten().tolist()
-    x_plot = np.array(computed_data_plot.x_values).flatten().tolist()
-    y_plot = np.array(computed_data_plot.y_values).flatten().tolist()
-    x_snr  = np.array(computed_data_snr.x_values).flatten().tolist()
-    y_snr  = np.array(computed_data_snr.y_values).flatten().tolist()
-    if session['id_1'][16:] =='snr_off':
-        computed_data_ccf = ComputedData.query.filter_by(function_type='ccf'+session['id_1']).order_by(ComputedData.id.desc()).first()
-        x_ccf = np.array(computed_data_ccf.x_values).flatten().tolist() # only one unique ccf value
+    x_rv   = np.array(computed_data.rv_x).flatten().tolist()
+    y_rv   = np.array(computed_data.rv_y).flatten().tolist()
+    x_snr  = np.array(computed_data.snr_x).flatten().tolist()
+    y_snr  = np.array(computed_data.snr_y).flatten().tolist()
+    #if session['id_1'][16:] =='snr_off':
 
     # Create CSV data
-    csv_data = "wavelength(nm),snr,ccf,dv_spec,dv_total,order_cen,dv_vals\n"
-    for i in range(max(len(x_rv), len(y_rv),len(x_plot), len(x_snr), len(y_snr))):
+    csv_data = "wavelength(nm),snr,order_cen(nm),rv_vals(m/s)\n"
+    for i in range(max(len(x_rv),  len(x_snr))):
         val_x_rv = x_rv[i] if i < len(x_rv) else 'N/A'
         val_y_rv = y_rv[i] if i < len(y_rv) else 'N/A'
         val_x_snr = x_snr[i] if i < len(x_snr) else 'N/A'
         val_y_snr = y_snr[i] if i < len(y_snr) else 'N/A'
-        val_x_plot = x_plot[i] if i < len(x_plot) else 'N/A'
-        val_y_plot = y_plot[i] if i < len(y_plot) else 'N/A'
-        if session['id_1'][16:] =='snr_off':
-            val_xccf = x_ccf[i] if i < len(x_ccf) else 'N/A' # put this into header later for every snr data option
 
-        csv_data += "{},{}\\n".format(val_x_plot, val_y_plot)
+        csv_data += "{},{},{},{}\\n".format(val_x_snr,val_y_snr,val_x_rv, val_y_rv)
 
     return Response(
         csv_data,
