@@ -430,7 +430,7 @@ function fetchPlotdata_offaxis() {
         url: '/etc_ccf_snr_get_number',
         data: {mode: 'off-axis'},
         success: function(response) {
-            $('#yBandPlaceholder').append(response.ccf_etc_y);
+            $('#yBandPlaceholder').append(response.ccf_etc_y).append('seconds');
             $('#jBandPlaceholder').append(response.ccf_etc_j);
             $('#hBandPlaceholder').append(response.ccf_etc_h);
             $('#kBandPlaceholder').append(response.ccf_etc_k);
