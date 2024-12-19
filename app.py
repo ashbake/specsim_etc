@@ -451,7 +451,7 @@ def new_async_task(data,session_id):
 
     # only run ccf snr etc if in off axis mode
     if data['run_mode'] == 'etc_off':
-        ccf_vals = [so.obs.ccf_snr_etc_y,so.obs.ccf_snr_etc_J, so.obs.ccf_snr_etc_H, so.obs.ccf_snr_etc_K]
+        ccf_vals = [so.obs.etc_ccf_snr_y,so.obs.etc_ccf_snr_J, so.obs.etc_ccf_snr_H, so.obs.etc_ccf_snr_K]
     else:
         ccf_vals = ['N/A', 'N/A', 'N/A','N/A']
 
