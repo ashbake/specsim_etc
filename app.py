@@ -333,7 +333,7 @@ def download_csv():
         val_x_snr = x_snr[i] if i < len(x_snr) else 'N/A'
         val_y_snr = y_snr[i] if i < len(y_snr) else 'N/A'
 
-        csv_data += "{},{},{},{}\\n".format(val_x_snr,val_y_snr,val_x_rv, val_y_rv)
+        csv_data += "{},{},{},{}\n".format(val_x_snr,val_y_snr,val_x_rv, val_y_rv)
 
     return Response(
         csv_data,
@@ -449,13 +449,19 @@ def new_async_task(data,session_id):
     # clear database if too big
     check_and_clear_db()
 
+    # only run ccf snr etc if in off axis mode
+    if session['id_2'][16:]== 'snr_off':
+        ccf_vals = [so.obs.ccf_snr_etc_y,so.obs.ccf_snr_etc_J, so.obs.ccf_snr_etc_H, so.obs.ccf_snr_etc_K]
+    else:
+        ccf_vals = ['N/A', 'N/A', 'N/A','N/A']
+
     with app.app_context():
         if data['run_mode'].startswith('etc'):
             computed_data = ComputedData(
                 function_type='etc'+session_id, 
                 x_values=so.inst.order_cens, 
                 y_values=so.obs.etc_order_max,
-                ccf_vals=so.obs.ccf_snr_etc # make this optionally input
+                ccf_vals=ccf_vals  
             )
 
             db.session.add(computed_data)
@@ -543,7 +549,7 @@ def etc_snr_on_get_plot():
     
     fig, axs = plt.subplots(1,figsize=(10,5),sharex=True)
     plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
-    axs.plot(order_cens,etc_order_max,zorder=200,label='SNR')
+    axs.plot(order_cens,etc_order_max,'o',zorder=200,label='SNR')
 
     # label
     axs.set_ylabel('Seconds')
@@ -555,14 +561,14 @@ def etc_snr_on_get_plot():
 
     # filter band fill
     y_max_val = np.nanmax(etc_order_max)
-    axs.fill_between([980,1100],0,y_max_val,facecolor='k',edgecolor='black',alpha=0.1)
-    axs.text(20+980,y_max_val, 'y')
-    axs.fill_between([1170,1327],0,y_max_val,facecolor='k',edgecolor='black',alpha=0.1)
-    axs.text(50+1170,y_max_val, 'J')
-    axs.fill_between([1490,1780],0,y_max_val,facecolor='k',edgecolor='black',alpha=0.1)
-    axs.text(50+1490,y_max_val, 'H')
-    axs.fill_between([1990,2460],0,y_max_val,facecolor='k',edgecolor='black',alpha=0.1)
-    axs.text(50+1990,y_max_val, 'K')
+    axs.fill_between([980,1100],0,y_max_val*1.1,facecolor='k',edgecolor='black',alpha=0.1)
+    axs.text(50+980,y_max_val*.8, 'y')
+    axs.fill_between([1170,1327],0,y_max_val*1.1,facecolor='k',edgecolor='black',alpha=0.1)
+    axs.text(70+1170,y_max_val*.8, 'J')
+    axs.fill_between([1490,1780],0,y_max_val*1.1,facecolor='k',edgecolor='black',alpha=0.1)
+    axs.text(90+1490,y_max_val*.8, 'H')
+    axs.fill_between([1990,2460],0,y_max_val*1.1,facecolor='k',edgecolor='black',alpha=0.1)
+    axs.text(120+1990,y_max_val*.8, 'K')
 
     # Save the plot to a BytesIO object
     img = io.BytesIO()
@@ -579,9 +585,6 @@ def etc_ccf_snr_get_number():
     data_entry = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
     y_values   = data_entry.ccf_vals
     return jsonify({"number": np.round(y_values,1)})
-
-
-
 
 
 ##################################################

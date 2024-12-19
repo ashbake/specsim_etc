@@ -50,7 +50,7 @@
             
             <div id="vsini_div" class="row">
                 <div class="input-field col s12">
-                    <input type="number" id="vsini" placeholder="km/s" value="34.79" required>
+                    <input type="number" id="vsini" placeholder="km/s" value="2" required>
                     <label for="vsini">Vsini of On-axis Object (km/s)</label>
                 </div>
             </div>
@@ -200,13 +200,13 @@
     
     <div class="row">
         <div class="col s12 left-align">
-            <button class="btn waves-effect waves-light" id="showdata" onclick="fetchPlotdata()">Show Data</button>
+            <button class="btn waves-effect waves-light" id="showdata_off" onclick="fetchPlotdata_offaxis()">Show Data</button>
         </div>
     </div>
     
     <div class="row">
         <div class="col s12 left-align">
-            <button class="btn waves-effect waves-light" id="showdata2" onclick="fetchPlotdata2()">Show Data</button>
+            <button class="btn waves-effect waves-light" id="showdata_on" onclick="fetchPlotdata_onaxis()">Show Data</button>
         </div>
     </div>
     
@@ -411,7 +411,7 @@ function downloadCSV() {
     });
 }
 
-function fetchPlotdata() {
+function fetchPlotdata_offaxis() {
     $("#PlotSection").show();
     $("#CCFSection").show();
     $.ajax({
@@ -443,7 +443,7 @@ function fetchPlotdata() {
     });
 }
 
-function fetchPlotdata2() {
+function fetchPlotdata_onaxis() {
     $("#PlotSection").show();
     $("#CCFSection").show();
     $.ajax({
@@ -505,8 +505,8 @@ function fetchPlotdata2() {
                 $('#numberPlaceholder').show();
                 $('#numberPlaceholder2').show();
                 $('#etc_ccf_label').show();
-                $('#showdata').show();
-                $('#showdata2').hide();
+                $('#showdata_off').show();
+                $('#showdata_on').hide();
             } else {
                 $('#vsini_div').show();
                 $('#rv_div').show();
@@ -519,9 +519,9 @@ function fetchPlotdata2() {
                 $('#etc_ccf').hide();
                 $('#numberPlaceholder').show();
                 $('#numberPlaceholder2').show();
-                $('#etc_ccf_label').hide();
-                $('#showdata').hide();
-                $('#showdata2').show();
+                $('#etc_ccf_label').show();
+                $('#showdata_off').hide();
+                $('#showdata_on').show();
             }
         });
 
