@@ -450,7 +450,7 @@ def new_async_task(data,session_id):
     check_and_clear_db()
 
     # only run ccf snr etc if in off axis mode
-    if session['id_2'][16:]== 'snr_off':
+    if data['run_mode'] == 'etc_off':
         ccf_vals = [so.obs.ccf_snr_etc_y,so.obs.ccf_snr_etc_J, so.obs.ccf_snr_etc_H, so.obs.ccf_snr_etc_K]
     else:
         ccf_vals = ['N/A', 'N/A', 'N/A','N/A']
