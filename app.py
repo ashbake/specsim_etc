@@ -582,9 +582,11 @@ def etc_snr_on_get_plot():
 
 @app.route('/etc_ccf_snr_get_number', methods=['GET'])
 def etc_ccf_snr_get_number():
-    data_entry = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
-    y_values   = data_entry.ccf_vals
-    return jsonify({"number": np.round(y_values,1)})
+    data = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
+    return jsonify({"ccf_etc_y": np.round(data.ccf_vals[0],1),
+                    "ccf_etc_j": np.round(data.ccf_vals[1],1),
+                    "ccf_etc_h": np.round(data.ccf_vals[2],1),
+                    "ccf_etc_k": np.round(data.ccf_vals[3],1)})
 
 
 ##################################################

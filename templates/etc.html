@@ -218,8 +218,10 @@
     <div id="CCFSection" style="display: none;">
     <div class="row">
         <div class="col s12 left-align">
-            <h6 id="etc_ccf_label">Time for Target CCF (s):</h6><div id="numberPlaceholder"></div>
-            <h6 id="etc_ccf_label">Recommended Exposure Time Based on Target SNR (s):</h6><div id="numberPlaceholder2"></div>
+            <h6 id="ccf_label_y">y Band CCF ETC:</h6><div id="yBandPlaceholder">y Band CCF ETC: </div>
+            <h6 id="ccf_label_j">J Band CCF ETC:</h6><div id="jBandPlaceholder">J Band CCF ETC: </div>
+            <h6 id="ccf_label_h">H Band CCF ETC:</h6><div id="hBandPlaceholder">H Band CCF ETC: </div>
+            <h6 id="ccf_label_k">K Band CCF ETC:</h6><div id="kBandPlaceholder">K Band CCF ETC: </div>
         </div>
     </div>
     </div>
@@ -428,8 +430,10 @@ function fetchPlotdata_offaxis() {
         url: '/etc_ccf_snr_get_number',
         data: {mode: 'off-axis'},
         success: function(response) {
-            $('#numberPlaceholder').text(response.number);
-            $('#numberPlaceholder2').text(response.sugnumber);
+            $('#yBandPlaceholder').append(response.ccf_etc_y);
+            $('#jBandPlaceholder').append(response.ccf_etc_j);
+            $('#hBandPlaceholder').append(response.ccf_etc_h);
+            $('#kBandPlaceholder').append(response.ccf_etc_k);
         },
         error: function(error) {
             console.log("Error occurred:", error);
@@ -460,8 +464,10 @@ function fetchPlotdata_onaxis() {
         url: '/etc_ccf_snr_get_number',
         data: {mode: 'on-axis'},
         success: function(response) {
-            $('#numberPlaceholder').text(response.number);
-            $('#numberPlaceholder2').text(response.sugnumber);
+            $('#yBandPlaceholder').append(response.ccf_etc_y);
+            $('#jBandPlaceholder').append(response.ccf_etc_j);
+            $('#hBandPlaceholder').append(response.ccf_etc_h);
+            $('#kBandPlaceholder').append(response.ccf_etc_k);
         },
         error: function(error) {
             console.log("Error occurred:", error);
@@ -502,9 +508,14 @@ function fetchPlotdata_onaxis() {
                 $('#submitBt').show();
                 $('#submitBt2').hide();
                 $('#etc_ccf').show();
-                $('#numberPlaceholder').show();
-                $('#numberPlaceholder2').show();
-                $('#etc_ccf_label').show();
+                $('#yBandPlaceholder').show();
+                $('#jBandPlaceholder').show();
+                $('#hBandPlaceholder').show();
+                $('#kBandPlaceholder').show();
+                $('#ccf_label_y').show();
+                $('#ccf_label_j').show();
+                $('#ccf_label_h').show();
+                $('#ccf_label_k').show();
                 $('#showdata_off').show();
                 $('#showdata_on').hide();
             } else {
@@ -517,9 +528,14 @@ function fetchPlotdata_onaxis() {
                 $('#submitBt').hide();
                 $('#submitBt2').show();
                 $('#etc_ccf').hide();
-                $('#numberPlaceholder').show();
-                $('#numberPlaceholder2').show();
-                $('#etc_ccf_label').show();
+                $('#yBandPlaceholder').show();
+                $('#jBandPlaceholder').show();
+                $('#hBandPlaceholder').show();
+                $('#kBandPlaceholder').show();
+                $('#ccf_label_y').show();
+                $('#ccf_label_j').show();
+                $('#ccf_label_h').show();
+                $('#ccf_label_k').show();
                 $('#showdata_off').hide();
                 $('#showdata_on').show();
             }
@@ -538,7 +554,10 @@ function fetchPlotdata_onaxis() {
     
         function resetOutputs() {
     $("#plotImg2").attr("src", "");  // Reset image source
-    $("#numberPlaceholder").text("");  // Reset number placeholder
+    $("#yBandPlaceholder").text("");  // Reset number placeholder
+    $("#jBandPlaceholder").text("");  // Reset number placeholder
+    $("#hBandPlaceholder").text("");  // Reset number placeholder
+    $("#kBandPlaceholder").text("");  // Reset number placeholder
     $('#result').html('');
 }
       </script>
