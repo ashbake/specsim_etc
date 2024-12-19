@@ -219,7 +219,9 @@ def define_config_file(data,instrument):
         config['obs']['texp'] = data['exposure_time'] # only fill in exopsure time if in snr mode
     else:
         config['obs']['texp_frame'] = data['frame_exposure_time']
-
+        config['obs']['target_snr'] = data['target_snr']
+        config['obs']['target_ccf_snr'] = data['goal_ccf'] # use same user input
+        
     return config
 
 ##############
@@ -247,7 +249,7 @@ def async_fill_data(data,session_id):
         # snr_off or snr_on bc code works either way the same
         computed_data_snr = ComputedData(
             function_type='data'+session_id, 
-            x_values=so.obs.v[so.obs.ind_filter], 
+            x_values=so.obs.v[so.obs.ind_filter], # will be deprecated soon
             y_values=so.obs.snr[so.obs.ind_filter],
             snr_x   = so.obs.v[so.obs.ind_filter],
             snr_y   = so.obs.snr[so.obs.ind_filter],
@@ -291,6 +293,7 @@ def submit_data():
 
 @app.route('/status/<task_id>')
 def taskstatus(task_id):
+    # TODO Consolidate with other function identical to this
     task = async_fill_data.AsyncResult(task_id)
     if task.state == 'PENDING':
         response = {
@@ -308,6 +311,7 @@ def taskstatus(task_id):
             'status': 'Task failed',
         }
     return jsonify(response)
+
 
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
@@ -339,6 +343,7 @@ def download_csv():
 
 @app.route('/get_plot', methods=['GET'])
 def get_plot():
+    # This function generates the plot for snr_on and snr_off
     # Fetch the latest data from the database
     data_out = ComputedData.query.filter_by(function_type='data'+session['id_1']).order_by(ComputedData.id.desc()).first()
     order_cens = data_out.rv_x # order cens
@@ -425,6 +430,8 @@ def ccf_snr_get_number():
 ###########
 @celery.task
 def new_async_task(data,session_id):
+    # TODO label this etc or can consolidate?
+    # TODO have ccf etc split up per band and fix ccf etc
     # define instrument, load config based on run mode and data
     instrument = 'modhis'
     config = define_config_file(data, instrument)
@@ -447,21 +454,11 @@ def new_async_task(data,session_id):
             computed_data = ComputedData(
                 function_type='etc'+session_id, 
                 x_values=so.inst.order_cens, 
-                y_values=so.obs.etc_order_max
+                y_values=so.obs.etc_order_max,
+                ccf_vals=so.obs.ccf_snr_etc # make this optionally input
             )
-            computed_data2 = ComputedData(
-                function_type='sr'+session_id, 
-                x_values=so.inst.xtransmit, 
-                y_values=so.inst.ytransmit )
-            computed_data4 = ComputedData(
-                function_type='etc_ccf'+session_id, 
-                x_values=so.obs.ccf_snr_etc, 
-                y_values=so.obs.ccf_snr_etc
-            )
-            db.session.add(computed_data)
-            db.session.add(computed_data2)
-            db.session.add(computed_data4)
 
+            db.session.add(computed_data)
             db.session.commit()
 
     delete_old_cfg_files()
@@ -512,133 +509,79 @@ def newtaskstatus(task_id):
 
 @app.route('/etc_snr_on_download_csv', methods=['POST'])
 def etc_snr_on_download_csv():
-    if session['id_2'][16:]== 'etc_off':
+    #if session['id_2'][16:]== 'etc_off':
 
-        function_type1 = 'signal'
+    csv_filename = 'signal' # TODO change later
 
-        # Retrieve the most recent x and y values for the given function type from the database
-        computed_data2 = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
-        computed_data5 = ComputedData.query.filter_by(function_type='etc_ccf'+session['id_2']).order_by(ComputedData.id.desc()).first()
+    # Retrieve the most recent x and y values for the given function type from the database
+    computed_data = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
 
-        x = np.array(computed_data2.x_values).flatten().tolist()
-        y = np.array(computed_data2.y_values).flatten().tolist()
-        x3 = np.array(computed_data5.x_values).flatten().tolist()
+    x = np.array(computed_data.x_values).flatten().tolist()
+    y = np.array(computed_data.y_values).flatten().tolist()
+    #x3 = np.array(computed_data.ccf_vals).flatten().tolist()
 
-        # Convert data to CSV format
-        csv_data = "wavelength(nm),time(s)_for_SNR,time(s)_for_CCF\n"
-        for i in range(max(len(x), len(y),len(x3))):
-            val_x = x[i] if i < len(x) else 'N/A'
-            val_y = y[i] if i < len(y) else 'N/A'
-            val_x3 = x3[i] if i < len(x3) else 'N/A'
-            csv_data += "{},{},{}\\n".format(val_x, val_y, val_x3)
+    # Convert data to CSV format
+    # TODO add header with all user params
+    csv_data = "wavelength(nm),exptime(s)_for_SNR\n"
+    for i in range(max(len(x), len(y))):
+        val_x = x[i] if i < len(x) else 'N/A'
+        val_y = y[i] if i < len(y) else 'N/A'
+        csv_data += "{},{}\n".format(val_x, val_y)
 
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename={}.csv".format(function_type1)}
-        )
-    elif session['id_2'][16:]== 'etc_on':
-        function_type1 = session['id_2'][16:]
-        # Retrieve the most recent x and y values for the given function type from the database
-        computed_data2 = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
+    return Response(
+        csv_data,
+        mimetype="text/csv",
+        headers={"Content-disposition": "attachment; filename={}.csv".format(csv_filename)}
+    )
 
-
-        x = np.array(computed_data2.x_values).flatten().tolist()
-        y = np.array(computed_data2.y_values).flatten().tolist()
-
-        # Convert data to CSV format
-        csv_data = "wavelength(nm),time(s)\n"
-        for i in range(max(len(x), len(y))):
-            val_x = x[i] if i < len(x) else 'N/A'
-            val_y = y[i] if i < len(y) else 'N/A'
-            
-            csv_data += "{},{}\\n".format(val_x, val_y)
-
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename={}.csv".format(function_type1)}
-        )
-
-@app.route('/etc_snr_on_get_plot2', methods=['GET'])
-def etc_snr_on_get_plot2():
+@app.route('/etc_snr_on_get_plot', methods=['GET'])
+def etc_snr_on_get_plot():
     # Fetch the latest data from the database
-        if session['id_2'][16:]== 'etc_off':
-            data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_2']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values
-            y_values_sr = data_entry_sr.y_values
-            data_entry_snr = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values
-            y_values_snr = data_entry_snr.y_values
-            col_table = plt.get_cmap('Spectral_r')
-            fig, axs = plt.subplots(1,figsize=(10,10),sharex=True)
-            plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
+    data = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
+    order_cens    = data.x_values
+    etc_order_max = data.y_values
+    
+    fig, axs = plt.subplots(1,figsize=(10,5),sharex=True)
+    plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
+    axs.plot(order_cens,etc_order_max,zorder=200,label='SNR')
 
-            axs.set_ylabel('Seconds')
-            axs.set_title('TMT-MODHIS, Off Axis')
-            axs.grid('True')
-            ax2 = axs.twinx() 
-            ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
-            axs.set_xlim(950,2400)
-            axs.set_xlabel('Wavelength [nm]')
-            ax2.set_ylabel('Total Throughput',fontsize=12)
-            axs.plot(x_values_snr,y_values_snr,zorder=200,label='SNR')
-            axs.set_yscale("log")
-            axs.fill_between([980,1100],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(20+980,np.max(y_values_snr), 'y')
-            axs.fill_between([1170,1327],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1170,np.max(y_values_snr), 'J')
-            axs.fill_between([1490,1780],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1490,np.max(y_values_snr), 'H')
-            axs.fill_between([1990,2460],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1990,np.max(y_values_snr), 'K')
-            ax2.legend(fontsize=8,loc=1)
-        elif session['id_2'][16:]== 'etc_on':
-            data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_2']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values
-            y_values_sr = data_entry_sr.y_values
-            data_entry_snr = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values
-            y_values_snr = data_entry_snr.y_values
-            col_table = plt.get_cmap('Spectral_r')
-            fig, axs = plt.subplots(1,figsize=(10,10),sharex=True)
-            plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
+    # label
+    axs.set_ylabel('Seconds')
+    axs.set_title('TMT-MODHIS, ETC')
+    axs.grid('True')
+    axs.set_xlim(950,2400)
+    axs.set_xlabel('Wavelength [nm]')
+    axs.set_yscale("log")
 
-            axs.set_ylabel('Seconds')
-            axs.set_title('TMT-MODHIS, On Axis')
-            axs.grid('True')
-            ax2 = axs.twinx() 
-            ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
-            axs.set_xlim(950,2400)
-            axs.set_xlabel('Wavelength [nm]')
-            y_values_snr = [x if x >= 0 else 0 for x in y_values_snr] 
-            axs.plot(x_values_snr,y_values_snr,zorder=200,label='SNR')
-            axs.set_yscale("log")# # 
-            axs.fill_between([980,1100],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(20+980,np.max(y_values_snr), 'y')
-            axs.fill_between([1170,1327],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1170,np.max(y_values_snr), 'J')
-            axs.fill_between([1490,1780],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1490,np.max(y_values_snr), 'H')
-            axs.fill_between([1990,2460],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1990,np.max(y_values_snr), 'K')
-            ax2.legend(fontsize=8,loc=1)
-        # Save the plot to a BytesIO object
-        img = io.BytesIO()
-        plt.savefig(img, format='png')
-        img.seek(0)
-        plt.close()
+    # filter band fill
+    y_max_val = np.nanmax(etc_order_max)
+    axs.fill_between([980,1100],0,y_max_val,facecolor='k',edgecolor='black',alpha=0.1)
+    axs.text(20+980,y_max_val, 'y')
+    axs.fill_between([1170,1327],0,y_max_val,facecolor='k',edgecolor='black',alpha=0.1)
+    axs.text(50+1170,y_max_val, 'J')
+    axs.fill_between([1490,1780],0,y_max_val,facecolor='k',edgecolor='black',alpha=0.1)
+    axs.text(50+1490,y_max_val, 'H')
+    axs.fill_between([1990,2460],0,y_max_val,facecolor='k',edgecolor='black',alpha=0.1)
+    axs.text(50+1990,y_max_val, 'K')
 
-        # Encode the image to base64 and return as JSON
-        img_base64 = base64.b64encode(img.getvalue()).decode('utf-8')
-        return jsonify({'image': img_base64})
+    # Save the plot to a BytesIO object
+    img = io.BytesIO()
+    plt.savefig(img, format='png')
+    img.seek(0)
+    plt.close()
+
+    # Encode the image to base64 and return as JSON
+    img_base64 = base64.b64encode(img.getvalue()).decode('utf-8')
+    return jsonify({'image': img_base64})
 
 @app.route('/etc_ccf_snr_get_number', methods=['GET'])
 def etc_ccf_snr_get_number():
-    data_entry = ComputedData.query.filter_by(function_type='etc_ccf'+session['id_2']).order_by(ComputedData.id.desc()).first()
-    y_values = data_entry.y_values
-    my_number =y_values
-    return jsonify({"number": my_number})
+    data_entry = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
+    y_values   = data_entry.ccf_vals
+    return jsonify({"number": np.round(y_values,1)})
+
+
+
 
 
 ##################################################

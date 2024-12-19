@@ -416,7 +416,7 @@ function fetchPlotdata() {
     $("#CCFSection").show();
     $.ajax({
         type: 'GET',
-        url: '/etc_snr_on_get_plot2',
+        url: '/etc_snr_on_get_plot',
         data: {mode: 'off-axis'},
         timeout: 100000,
         success: function(response) {
@@ -448,7 +448,7 @@ function fetchPlotdata2() {
     $("#CCFSection").show();
     $.ajax({
         type: 'GET',
-        url: '/etc_snr_on_get_plot2',
+        url: '/etc_snr_on_get_plot',
         data: {mode: 'on-axis'},
         timeout: 100000,
         success: function(response) {
