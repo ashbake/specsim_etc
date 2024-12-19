@@ -150,12 +150,12 @@
     <label for="frame_exposure_time">Frame Exposure Time(s)</label>
 </div>
 <div class="input-field">
-    <input type="number" id="target_snr" title='target noise to signal ratio'value="5" required>
+    <input type="number" id="target_snr" title='target noise to signal ratio'value="100" required>
     <label for="target_snr">Target SNR</label>
 </div>
 
 <div class="input-field" id="etc_ccf">
-    <input type="number" id="goal_ccf" placeholder="" title="" value="200" required>
+    <input type="number" id="goal_ccf" placeholder="" title="" value="5" required>
     <label for="goal_ccf">Goal CCF</label>
 </div>
 
@@ -516,10 +516,10 @@ function fetchPlotdata2() {
                 $('#ang_sep_div').hide();
                 $('#submitBt').hide();
                 $('#submitBt2').show();
-                $('#etc_ccf').show();
+                $('#etc_ccf').hide();
                 $('#numberPlaceholder').show();
                 $('#numberPlaceholder2').show();
-                $('#etc_ccf_label').show();
+                $('#etc_ccf_label').hide();
                 $('#showdata').hide();
                 $('#showdata2').show();
             }
