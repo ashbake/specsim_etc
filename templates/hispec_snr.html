@@ -268,7 +268,7 @@
                 atmospheric_conditions: $("#atmospheric_conditions").val(),
                 run_mode: $("#object_type").val(),
                 exposure_time: $("#exposure_time").val(),
-
+                instrument: "hispec"
             };
 
             // Send the data to Flask backend (you can adjust this as per your requirements)
@@ -336,7 +336,7 @@ function submitData2() {
                 atmospheric_conditions: $("#atmospheric_conditions").val(),
                 run_mode: $("#object_type").val(),
                 exposure_time: $("#exposure_time").val(),
-
+                instrument: "hispec"
             };
 
             // Send the data to Flask backend (you can adjust this as per your requirements)
@@ -447,7 +447,7 @@ function fetchPlotdata2() {
     $("#CCFSection").show();
     $.ajax({
         type: 'GET',
-        url: '/hispec_get_plot',
+        url: '/get_plot',
         data: {mode: 'on-axis'},
         success: function(response) {
             if (response && response.image) {
@@ -455,7 +455,7 @@ function fetchPlotdata2() {
             };
             $.ajax({
         type: 'GET',
-        url: '/hispec_ccf_snr_get_number',
+        url: '/ccf_snr_get_number',
         data: {mode: 'on-axis'},
         success: function(response) {
             $('#yBandPlaceholder').append(response.y_band_snr);
