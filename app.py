@@ -453,7 +453,7 @@ def new_async_task(data,session_id):
     if data['run_mode'] == 'etc_off':
         ccf_vals = [so.obs.etc_ccf_snr_y,so.obs.etc_ccf_snr_J, so.obs.etc_ccf_snr_H, so.obs.etc_ccf_snr_K]
     else:
-        ccf_vals = ['N/A', 'N/A', 'N/A','N/A']
+        ccf_vals = [-99,-99,-99,-99]
 
     with app.app_context():
         if data['run_mode'].startswith('etc'):
@@ -583,7 +583,7 @@ def etc_snr_on_get_plot():
 @app.route('/etc_ccf_snr_get_number', methods=['GET'])
 def etc_ccf_snr_get_number():
     data = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
-    return jsonify({"ccf_etc_y": str(np.round(data.ccf_vals[0],1)) + ' sec',
+    return jsonify({"ccf_etc_y": str(np.round(data.ccf_vals[0],1))+ ' sec',
                     "ccf_etc_j": str(np.round(data.ccf_vals[1],1))+ ' sec',
                     "ccf_etc_h": str(np.round(data.ccf_vals[2],1))+ ' sec',
                     "ccf_etc_k": str(np.round(data.ccf_vals[3],1))+ ' sec'
