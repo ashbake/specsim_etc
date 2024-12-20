@@ -226,9 +226,9 @@ def define_config_file(data,instrument):
 
 ##############
 @celery.task
-def async_fill_data(data,session_id):
+def async_fill_data(data,session_id,instrument):
     # define instrument, load config based on run mode and data
-    instrument = 'modhis'
+    #instrument = 'modhis'
     config = define_config_file(data, instrument)
 
     cfg_file_path = os.path.join(BASE_DIR, f"{session_id}config.cfg")
@@ -266,11 +266,6 @@ def async_fill_data(data,session_id):
 
     delete_old_cfg_files()
 
-@app.route('/task/<task_id>', methods=['GET'])
-def get_task_status(task_id):
-    task = async_fill_data.AsyncResult(task_id)
-    return jsonify({"status": str(task.status)})
-
 ##############
 @app.route('/')
 def index():
@@ -292,8 +287,7 @@ def submit_data():
     return jsonify({}), 202, {'Location': '/status/{}'.format(task.id)}
 
 @app.route('/status/<task_id>')
-def taskstatus(task_id):
-    # TODO Consolidate with other function identical to this
+def task_status(task_id):
     task = async_fill_data.AsyncResult(task_id)
     if task.state == 'PENDING':
         response = {
@@ -427,13 +421,10 @@ def ccf_snr_get_number():
                     "k_band_snr": round(data_out.ccf_vals[3],1),
                     })
 
-###########
+########### ETC START
 @celery.task
-def new_async_task(data,session_id):
-    # TODO label this etc or can consolidate?
-    # TODO have ccf etc split up per band and fix ccf etc
+def etc_async_task(data,session_id,instrument):
     # define instrument, load config based on run mode and data
-    instrument = 'modhis'
     config = define_config_file(data, instrument)
 
     cfg_file_path = os.path.join(BASE_DIR, f"{session_id}config.cfg")
@@ -469,33 +460,28 @@ def new_async_task(data,session_id):
 
     delete_old_cfg_files()
 
-@app.route('/new_status/<task_id>')
-def new_task_status(task_id):
-    task = new_async_task.AsyncResult(task_id)
-    return jsonify({"status": str(task.status)})
-
 ###########
 @app.route('/etc')
 def etc():
     return render_template('etc.html')
 
 @app.route('/etc_snr_on_submit_data', methods=['POST'])
-def etc_snr_on_submit_data():
+def etc_submit_data():
     current_time = datetime.now()
     formatted_time = current_time.strftime('%Y%m%d%H%M%S%f')
     time_index = str(formatted_time)
     data = request.json
     session['id_2']=time_index[:15]+'4'+ data['run_mode']
-    task = new_async_task.apply_async(args=[data,session['id_2']])
+    task = etc_async_task.apply_async(args=[data,session['id_2']])
     print(session['id_2'])
     # Process the received data as required
     # For now, just print it to the console
     print(data)
-    return jsonify({}), 202, {'Location': '/new_status/{}'.format(task.id)}
+    return jsonify({}), 202, {'Location': '/etc_status/{}'.format(task.id)}
 
-@app.route('/new_status/<task_id>')
-def newtaskstatus(task_id):
-    task = new_async_task.AsyncResult(task_id)
+@app.route('/etc_status/<task_id>')
+def etc_task_status(task_id):
+    task = etc_async_task.AsyncResult(task_id)
     if task.state == 'PENDING':
         response = {
             'state': task.state,
@@ -591,536 +577,17 @@ def etc_ccf_snr_get_number():
 
 
 ##################################################
-@celery.task
-def hispec_async_fill_data(data,session_id):
-    # define instrument, load config based on run mode and data
-    instrument = 'hispec'
-    config = define_config_file(data, instrument)
-
-    cfg_file_path = os.path.join(BASE_DIR, f"{session_id}config.cfg")
-    with open(cfg_file_path, 'w') as configfile:
-        config.write(configfile)
-    configfile = cfg_file_path # define our config file name and path
-
-    # run specsim!
-    so    = load_object(configfile)  
-    so.ao.mode = data['ao_mode']
-    cload = fill_data(so) 
-
-    # clear database if too big
-    check_and_clear_db()
-
-    with app.app_context():
-        # snr_off or snr_on bc code works either way the same
-        computed_data = ComputedData(
-            function_type='snr'+session_id, 
-            x_values=so.obs.v[so.obs.ind_filter], 
-            y_values=so.obs.snr[so.obs.ind_filter]
-        )
-        computed_data2 = ComputedData(
-            function_type='sr'+session_id, 
-            x_values=so.inst.xtransmit, 
-            y_values=so.inst.ytransmit)
-        computed_data3 = ComputedData(
-            function_type='rv'+session_id, 
-            x_values=so.obs.rv_order, 
-            y_values=so.obs.rv_tot
-        )
-        computed_data4 = ComputedData(
-            function_type='ccf'+session_id, 
-            x_values=so.obs.ccf_snr, 
-            y_values=so.obs.ccf_snr
-        )
-        computed_data5 = ComputedData(
-            function_type='plot'+session_id, 
-            x_values=so.inst.order_cens, 
-            y_values=so.obs.rv_order)
-        db.session.add(computed_data)
-        db.session.add(computed_data2)
-        db.session.add(computed_data3)
-        db.session.add(computed_data4)
-        db.session.add(computed_data5)
-
-        db.session.commit()
-    delete_old_cfg_files()
-
-@app.route('/hispec_task/<task_id>', methods=['GET'])
-def hispec_get_task_status(task_id):
-    task = hispec_async_fill_data.AsyncResult(task_id)
-    return jsonify({"status": str(task.status)})
-
-##############
+# HISPEC START
+############## HISPEC SNR
 @app.route('/hispec_snr')
 def hispec_snr():
     return render_template('hispec_snr.html')
 
-@app.route('/hispec_submit_data', methods=['POST'])
-def hispec_submit_data():
-    current_time = datetime.now()
-    formatted_time = current_time.strftime('%Y%m%d%H%M%S%f')
-    time_index = str(formatted_time)
-    data = request.json  
-    session['id_4']=time_index[:15]+'1'+ data['run_mode'] # why is this 4 and iter is 1
-    task = hispec_async_fill_data.apply_async(args=[data,session['id_4']])
-    print(session['id_4'])
-    # Process the received data as required
-    # For now, just print it to the console
-    print(data)
-    return jsonify({}), 202, {'Location': '/hispec_task/{}'.format(task.id)}
-
-@app.route('/hispec_task/<task_id>')
-def hispec_taskstatus(task_id):
-    task = hispec_async_fill_data.AsyncResult(task_id)
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Pending...'
-        }
-    elif task.state != 'FAILURE':
-        response = {
-            'state': task.state,
-            'result': task.result,
-        }
-    else:
-        response = {
-            'state': task.state,
-            'status': 'Task failed',
-        }
-    return jsonify(response)
-
-@app.route('/hispec_download_csv', methods=['POST'])
-def hispec_download_csv():
-    if session['id_4'][16:]== 'snr_off':
-        function_type1 = session['id_4'][16:]
-        
-        # Retrieve the most recent x and y values for the given function type from the database
-        rv_data = ComputedData.query.filter_by(function_type='rv'+session['id_4']).order_by(ComputedData.id.desc()).first()
-        computed_data3 = ComputedData.query.filter_by(function_type='plot'+session['id_4']).order_by(ComputedData.id.desc()).first()
-        computed_data2 = ComputedData.query.filter_by(function_type='snr'+session['id_4']).order_by(ComputedData.id.desc()).first()
-        computed_data5 = ComputedData.query.filter_by(function_type='ccf'+session['id_4']).order_by(ComputedData.id.desc()).first()
-
-        # Convert data to lists
-        x = np.array(computed_data2.x_values).flatten().tolist()
-        y = np.array(computed_data2.y_values).flatten().tolist()
-        x3 = np.array(computed_data5.x_values).flatten().tolist()
-        x4 = np.array(computed_data3.x_values).flatten().tolist()
-        y4 = np.array(computed_data3.y_values).flatten().tolist()
-        x_rv = np.array(computed_data.x_values).flatten().tolist()
-        y_rv = np.array(rv_data.y_values).flatten().tolist()
-
-        # Create CSV data
-        csv_data = "wavelength(nm),snr,ccf,dv_spec,dv_total,order_cen,dv_vals\n"
-        for i in range(max(len(x), len(y),len(x3), len(x4), len(y4), len(x5),len(y5))):
-            val_x = x[i] if i < len(x) else 'N/A'
-            val_y = y[i] if i < len(y) else 'N/A'
-            val_x3 = x3[i] if i < len(x3) else 'N/A'
-            val_x4 = x4[i] if i < len(x4) else 'N/A'
-            val_y4 = y4[i] if i < len(y4) else 'N/A'
-            val_x_rv = x_rv[i] if i < len(x5) else 'N/A'
-            val_y_rv = y_rv[i] if i < len(y5) else 'N/A'
-            
-            csv_data += "{},{},{},{},{},{},{}\n".format(val_x, val_y, val_x3, val_x4, val_y4, val_x_rv, val_y_rv)
-
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename={}.csv".format(function_type1)}
-        )
-    elif session['id_4'][16:]== 'snr_on':
-        function_type1 = session['id_4'][16:]
-        
-        # Retrieve the most recent x and y values for the given function type from the database
-        computed_data = ComputedData.query.filter_by(function_type='rv'+session['id_4']).order_by(ComputedData.id.desc()).first()
-        computed_data3 = ComputedData.query.filter_by(function_type='plot'+session['id_4']).order_by(ComputedData.id.desc()).first()
-        computed_data2 = ComputedData.query.filter_by(function_type='snr'+session['id_4']).order_by(ComputedData.id.desc()).first()
-
-        # Convert data to lists
-        x = np.array(computed_data2.x_values).flatten().tolist()
-        y = np.array(computed_data2.y_values).flatten().tolist()
-        x4 = np.array(computed_data3.x_values).flatten().tolist()
-        y4 = np.array(computed_data3.y_values).flatten().tolist()
-        x5 = np.array(computed_data.x_values).flatten().tolist()
-        y5 = np.array(computed_data.y_values).flatten().tolist()
-
-        # Create CSV data
-        csv_data = "wavelength(nm),snr,dv_spec,dv_total,order_cen,dv_vals\n"
-        for i in range(max(len(x), len(y), len(x4), len(y4), len(x5),len(y5))):
-            val_x = x[i] if i < len(x) else 'N/A'
-            val_y = y[i] if i < len(y) else 'N/A'
-            val_x4 = x4[i] if i < len(x4) else 'N/A'
-            val_y4 = y4[i] if i < len(y4) else 'N/A'
-            val_x5 = x5[i] if i < len(x5) else 'N/A'
-            val_y5 = y5[i] if i < len(y5) else 'N/A'
-            
-            csv_data += "{},{},{},{},{},{}\n".format(val_x, val_y, val_x4, val_y4, val_x5, val_y5)
-
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename={}.csv".format(function_type1)}
-        )
-
-@app.route('/hispec_get_plot', methods=['GET'])
-def hispec_get_plot():
-    # Fetch the latest data from the database
-        if session['id_4'][16:]== 'snr_off':
-            data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_4']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values
-            y_values_sr = data_entry_sr.y_values
-            data_entry_snr = ComputedData.query.filter_by(function_type='snr'+session['id_4']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values
-            y_values_snr = data_entry_snr.y_values
-            data_entry = ComputedData.query.filter_by(function_type='plot'+session['id_4']).order_by(ComputedData.id.desc()).first()
-            x_values = data_entry.x_values
-            y_values = data_entry.y_values
-            order_cens=x_values
-            dv_vals = y_values
-            col_table = plt.get_cmap('Spectral_r')
-            fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
-            plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
-
-            axs[1].plot([950,2400],[0.5,0.5],'k--',lw=0.7)
-            axs[1].fill_between([1450,2400],0,1000,facecolor='gray',alpha=0.2)
-            axs[1].fill_between([980,1330],0,1000,facecolor='gray',alpha=0.2)
-            axs[1].grid('True')
-            axs[1].set_ylim(-0,3*np.median(dv_vals))
-            axs[1].set_xlim(950,2400)
-            axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
-            axs[1].set_xlabel('Wavelength [nm]')
-
-            axs[0].set_ylabel('SNR')
-            axs[0].set_title('Keck-HISPEC, Off Axis')
-            axs[0].fill_between([980,1100],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(20+980,np.max(y_values_snr), 'y')
-            axs[0].fill_between([1170,1327],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1170,np.max(y_values_snr), 'J')
-            axs[0].fill_between([1490,1780],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1490,np.max(y_values_snr), 'H')
-            axs[0].fill_between([1990,2460],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1990,np.max(y_values_snr), 'K')
-            axs[0].grid('True')
-            ax2 = axs[0].twinx() 
-            ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
-
-            ax2.set_ylabel('Total Throughput',fontsize=12)
-            for i,lam_cen in enumerate(order_cens):
-                wvl_norm = (lam_cen - 900.) / (2500. - 900.)
-                axs[1].plot(lam_cen,dv_vals[i],'o',zorder=100,color=col_table(wvl_norm),markeredgecolor='k')
-            axs[0].plot(x_values_snr,y_values_snr,zorder=200,label='SNR')
-            sub_yj = dv_vals[np.where((dv_vals!=np.inf) & (order_cens < 1400))[0]]
-            sub_hk = dv_vals[np.where((dv_vals!=np.inf) & (order_cens > 1400))[0]]
-            dv_yj = 1. / (np.nansum(1./sub_yj**2.))**0.5	# 
-            dv_hk = 1. / (np.nansum(1./sub_hk**2.))**0.5	# 
-            dv_yj_tot = (0.5**2 +dv_yj**2.)**0.5	# 
-            dv_hk_tot = (0.5**2 +dv_hk**2.)**0.5	# # 
-
-            axs[1].text(1050,2*np.median(dv_vals),'$\sigma_{yJ}$=%sm/s'%round(dv_yj_tot,1),fontsize=12,zorder=101)
-            axs[1].text(1500,2*np.median(dv_vals),'$\sigma_{HK}$=%sm/s'%round(dv_hk_tot,1),fontsize=12,zorder=101)
-            ax2.legend(fontsize=8,loc=1)
-        elif session['id_4'][16:]== 'snr_on':
-            data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_4']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values
-            y_values_sr = data_entry_sr.y_values
-            data_entry_snr = ComputedData.query.filter_by(function_type='snr'+session['id_4']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values
-            y_values_snr = data_entry_snr.y_values
-            data_entry = ComputedData.query.filter_by(function_type='plot'+session['id_4']).order_by(ComputedData.id.desc()).first()
-            x_values = data_entry.x_values
-            y_values = data_entry.y_values
-            order_cens=x_values
-            dv_vals = y_values
-            col_table = plt.get_cmap('Spectral_r')
-            fig, axs = plt.subplots(2,figsize=(10,10),sharex=True)
-            plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
-
-            axs[1].plot([950,2400],[0.5,0.5],'k--',lw=0.7)
-            axs[1].fill_between([1450,2400],0,1000,facecolor='gray',alpha=0.2)
-            axs[1].fill_between([980,1330],0,1000,facecolor='gray',alpha=0.2)
-            axs[1].grid('True')
-            axs[1].set_ylim(-0,3*np.median(dv_vals))
-            axs[1].set_xlim(950,2400)
-            axs[1].set_ylabel('$\sigma_{RV}$ [m/s]')
-            axs[1].set_xlabel('Wavelength [nm]')
-
-            axs[0].set_ylabel('SNR')
-            axs[0].set_title('Keck-HISPEC, On Axis')
-            axs[0].fill_between([980,1100],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(20+980,np.max(y_values_snr), 'y')
-            axs[0].fill_between([1170,1327],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1170,np.max(y_values_snr), 'J')
-            axs[0].fill_between([1490,1780],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1490,np.max(y_values_snr), 'H')
-            axs[0].fill_between([1990,2460],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs[0].text(50+1990,np.max(y_values_snr), 'K')
-            axs[0].grid('True')
-            ax2 = axs[0].twinx() 
-            ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
-            for i,lam_cen in enumerate(order_cens):
-                wvl_norm = (lam_cen - 900.) / (2500. - 900.)
-                axs[1].plot(lam_cen,dv_vals[i],'o',zorder=100,color=col_table(wvl_norm),markeredgecolor='k')
-            y_values_snr = [x if x >= 0 else 0 for x in y_values_snr] 
-            axs[0].plot(x_values_snr,y_values_snr,zorder=200,label='SNR')
-            sub_yj = dv_vals[np.where((dv_vals!=np.inf) & (order_cens < 1400))[0]]
-            sub_hk = dv_vals[np.where((dv_vals!=np.inf) & (order_cens > 1400))[0]]
-            dv_yj = 1. / (np.nansum(1./sub_yj**2.))**0.5	# 
-            dv_hk = 1. / (np.nansum(1./sub_hk**2.))**0.5	# 
-            dv_yj_tot = (0.5**2 +dv_yj**2.)**0.5	# 
-            dv_hk_tot = (0.5**2 +dv_hk**2.)**0.5	# # 
-
-            axs[1].text(1050,2*np.median(dv_vals),'$\sigma_{yJ}$=%sm/s'%round(dv_yj_tot,1),fontsize=12,zorder=101)
-            axs[1].text(1500,2*np.median(dv_vals),'$\sigma_{HK}$=%sm/s'%round(dv_hk_tot,1),fontsize=12,zorder=101)
-            ax2.legend(fontsize=8,loc=1)
-        # Save the plot to a BytesIO object
-        img = io.BytesIO()
-        plt.savefig(img, format='png')
-        img.seek(0)
-        plt.close()
-
-        # Encode the image to base64 and return as JSON
-        img_base64 = base64.b64encode(img.getvalue()).decode('utf-8')
-        return jsonify({'image': img_base64})
-
-
-@app.route('/hispec_ccf_snr_get_number', methods=['GET'])
-def hispec_ccf_snr_get_number():
-    data_entry = ComputedData.query.filter_by(function_type='ccf'+session['id_4']).order_by(ComputedData.id.desc()).first()
-    if data_entry:
-        x_values = data_entry.x_values
-        y_values = data_entry.y_values
-    my_number =y_values
-    return jsonify({"number": my_number})
-
-
-###########
-@celery.task
-def hispec_new_async_task(data,session_id):
-    instrument = 'hispec'
-    config = define_config_file(data, instrument)
-
-    cfg_file_path = os.path.join(BASE_DIR, f"{session_id}config.cfg")
-    with open(cfg_file_path, 'w') as configfile:
-        config.write(configfile)
-    configfile = cfg_file_path # define our config file name and path
-
-    # run specsim!
-    so    = load_object(configfile)  
-    so.ao.mode = data['ao_mode']
-    cload = fill_data(so) 
-
-    # clear database if too big
-    check_and_clear_db()
-
-    with app.app_context():
-        if data['run_mode'] == 'etc_off':
-            computed_data = ComputedData(
-                function_type='etc'+session_id, 
-                x_values=so.etc.v[so.obs.ind_filter], 
-                y_values=so.etc.total_expt_filter
-            )
-            computed_data2 = ComputedData(
-                function_type='sr'+session_id, 
-                x_values=so.inst.xtransmit, 
-                y_values=so.inst.ytransmit)
-            computed_data4 = ComputedData(
-                function_type='etc_ccf'+session_id, 
-                x_values=so.obs.etc_ccf, 
-                y_values=so.obs.etc_ccf
-            )
-            db.session.add(computed_data)
-            db.session.add(computed_data2)
-            db.session.add(computed_data4)
-
-            db.session.commit()
-        if data['run_mode'] == 'etc_on':
-            computed_data = ComputedData(
-                function_type='etc'+session_id, 
-                x_values=so.etc.v[so.obs.ind_filter], 
-                y_values=so.etc.total_expt_s
-            )
-            computed_data2 = ComputedData(
-                function_type='sr'+session_id, 
-                x_values=so.inst.xtransmit, 
-                y_values=so.inst.ytransmit)
-            db.session.add(computed_data)
-            db.session.add(computed_data2)
-
-            db.session.commit()
-    delete_old_cfg_files()
-
-@app.route('/hispec_new_status/<task_id>')
-def hispec_new_task_status(task_id):
-    task = hispec_new_async_task.AsyncResult(task_id)
-    return jsonify({"status": str(task.status)})
 
 ###########
 @app.route('/hispec_etc')
 def hispec_etc():
     return render_template('hispec_etc.html')
-
-@app.route('/hispec_etc_snr_on_submit_data', methods=['POST'])
-def hispec_etc_snr_on_submit_data():
-    current_time = datetime.now()
-    formatted_time = current_time.strftime('%Y%m%d%H%M%S%f')
-    time_index = str(formatted_time)
-    data = request.json  
-    task = hispec_new_async_task.apply_async(args=[data,time_index[:15]+'2'+data['run_mode']])
-    session['id_3']=time_index[:15]+'2'+ data['run_mode']
-    print(session['id_3'])
-    # Process the received data as required
-    # For now, just print it to the console
-    print(data)
-    return jsonify({}), 202, {'Location': '/hispec_new_status/{}'.format(task.id)}
-
-@app.route('/hispec_new_status/<task_id>')
-def hispec_newtaskstatus(task_id):
-    task = hispec_new_async_task.AsyncResult(task_id)
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Pending...'
-        }
-    elif task.state != 'FAILURE':
-        response = {
-            'state': task.state,
-            'result': task.result,
-        }
-    else:
-        response = {
-            'state': task.state,
-            'status': 'Task failed',
-        }
-    return jsonify(response)
-
-@app.route('/hispec_etc_snr_on_download_csv', methods=['POST'])
-def hispec_etc_snr_on_download_csv():
-    if session['id_3'][16:]== 'etc_off':
-
-        function_type1 = 'signal'
-
-        # Retrieve the most recent x and y values for the given function type from the database
-        computed_data2 = ComputedData.query.filter_by(function_type='etc'+session['id_3']).order_by(ComputedData.id.desc()).first()
-        computed_data5 = ComputedData.query.filter_by(function_type='etc_ccf'+session['id_3']).order_by(ComputedData.id.desc()).first()
-
-
-        x = np.array(computed_data2.x_values).flatten().tolist()
-        y = np.array(computed_data2.y_values).flatten().tolist()
-        x3 = np.array(computed_data5.x_values).flatten().tolist()
-
-        # Convert data to CSV format
-        csv_data = "wavelength(nm),time(s)_for_SNR,time(s)_for_CCF\n"
-        for i in range(max(len(x), len(y),len(x3))):
-            val_x = x[i] if i < len(x) else 'N/A'
-            val_y = y[i] if i < len(y) else 'N/A'
-            val_x3 = x3[i] if i < len(x3) else 'N/A'
-            csv_data += "{},{},{}\\n".format(val_x, val_y, val_x3)
-
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename={}.csv".format(function_type1)}
-        )
-    elif session['id_3'][16:]== 'etc_on':
-        function_type1 = session['id_3'][16:]
-        # Retrieve the most recent x and y values for the given function type from the database
-        computed_data2 = ComputedData.query.filter_by(function_type='etc'+session['id_3']).order_by(ComputedData.id.desc()).first()
-
-
-        x = np.array(computed_data2.x_values).flatten().tolist()
-        y = np.array(computed_data2.y_values).flatten().tolist()
-
-        # Convert data to CSV format
-        csv_data = "wavelength(nm),time(s)\n"
-        for i in range(max(len(x), len(y))):
-            val_x = x[i] if i < len(x) else 'N/A'
-            val_y = y[i] if i < len(y) else 'N/A'
-            
-            csv_data += "{},{}\\n".format(val_x, val_y)
-
-        return Response(
-            csv_data,
-            mimetype="text/csv",
-            headers={"Content-disposition": "attachment; filename={}.csv".format(function_type1)}
-        )
-
-@app.route('/hispec_etc_snr_on_get_plot2', methods=['GET'])
-def hispec_etc_snr_on_get_plot2():
-    # Fetch the latest data from the database
-        if session['id_3'][16:]== 'etc_off':
-            data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_3']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values
-            y_values_sr = data_entry_sr.y_values
-            data_entry_snr = ComputedData.query.filter_by(function_type='etc'+session['id_3']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values
-            y_values_snr = data_entry_snr.y_values
-            col_table = plt.get_cmap('Spectral_r')
-            fig, axs = plt.subplots(1,figsize=(10,10),sharex=True)
-            plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
-
-            axs.set_ylabel('Seconds')
-            axs.set_title('Keck-HISPEC, Off Axis')
-            axs.grid('True')
-            ax2 = axs.twinx() 
-            ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
-            axs.set_xlim(950,2400)
-            axs.set_xlabel('Wavelength [nm]')
-            ax2.set_ylabel('Total Throughput',fontsize=12)
-            axs.plot(x_values_snr,y_values_snr,zorder=200,label='SNR')
-            axs.set_yscale("log")
-            axs.fill_between([980,1100],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(20+980,np.max(y_values_snr), 'y')
-            axs.fill_between([1170,1327],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1170,np.max(y_values_snr), 'J')
-            axs.fill_between([1490,1780],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1490,np.max(y_values_snr), 'H')
-            axs.fill_between([1990,2460],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1990,np.max(y_values_snr), 'K')
-            ax2.legend(fontsize=8,loc=1)
-        elif session['id_3'][16:]== 'etc_on':
-            data_entry_sr = ComputedData.query.filter_by(function_type='sr'+session['id_3']).order_by(ComputedData.id.desc()).first()
-            x_values_sr = data_entry_sr.x_values
-            y_values_sr = data_entry_sr.y_values
-            data_entry_snr = ComputedData.query.filter_by(function_type='etc'+session['id_3']).order_by(ComputedData.id.desc()).first()
-            x_values_snr = data_entry_snr.x_values
-            y_values_snr = data_entry_snr.y_values
-            col_table = plt.get_cmap('Spectral_r')
-            fig, axs = plt.subplots(1,figsize=(10,10),sharex=True)
-            plt.subplots_adjust(bottom=0.15,hspace=0.1,left=0.3,right=0.85,top=0.85)
-
-            axs.set_ylabel('Seconds')
-            axs.set_title('Keck-HISPEC, On Axis')
-            axs.grid('True')
-            ax2 = axs.twinx() 
-            ax2.plot(x_values_sr,y_values_sr,'k',alpha=0.5,zorder=-100,label='Total Throughput')
-            axs.set_xlim(950,2400)
-            axs.set_xlabel('Wavelength [nm]')
-            y_values_snr = [x if x >= 0 else 0 for x in y_values_snr] 
-            axs.plot(x_values_snr,y_values_snr,zorder=200,label='SNR')
-            axs.set_yscale("log")# # 
-            axs.fill_between([980,1100],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(20+980,np.max(y_values_snr), 'y')
-            axs.fill_between([1170,1327],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1170,np.max(y_values_snr), 'J')
-            axs.fill_between([1490,1780],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1490,np.max(y_values_snr), 'H')
-            axs.fill_between([1990,2460],0,np.max(y_values_snr),facecolor='k',edgecolor='black',alpha=0.1)
-            axs.text(50+1990,np.max(y_values_snr), 'K')
-            ax2.legend(fontsize=8,loc=1)
-        # Save the plot to a BytesIO object
-        img = io.BytesIO()
-        plt.savefig(img, format='png')
-        img.seek(0)
-        plt.close()
-
-        # Encode the image to base64 and return as JSON
-        img_base64 = base64.b64encode(img.getvalue()).decode('utf-8')
-        return jsonify({'image': img_base64})
-
-@app.route('/hispec_etc_ccf_snr_get_number', methods=['GET'])
-def hispec_etc_ccf_snr_get_number():
-    data_entry = ComputedData.query.filter_by(function_type='etc_ccf'+session['id_3']).order_by(ComputedData.id.desc()).first()
-    y_values = data_entry.y_values
-    my_number =y_values
-    return jsonify({"number": my_number})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=5000,debug=True,threaded=True)
