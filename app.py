@@ -424,7 +424,7 @@ def ccf_snr_get_number():
 
 ########### ETC START
 @celery.task
-def etc_async_task(data,session_id,instrument):
+def etc_async_task(data,session_id):
     # define instrument, load config based on run mode and data
     config = define_config_file(data)
 
