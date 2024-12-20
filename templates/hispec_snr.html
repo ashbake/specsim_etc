@@ -274,7 +274,7 @@
             // Send the data to Flask backend (you can adjust this as per your requirements)
             $.ajax({
         type: 'POST',
-        url: '/hispec_submit_data',
+        url: '/submit_data',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
         dataType: 'json',
@@ -342,7 +342,7 @@ function submitData2() {
             // Send the data to Flask backend (you can adjust this as per your requirements)
             $.ajax({
         type: 'POST',
-        url: '/hispec_submit_data',
+        url: '/submit_data',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
         dataType: 'json',
@@ -389,7 +389,7 @@ function submitData2() {
 
     $.ajax({
         type: 'POST',
-        url: '/hispec_download_csv',
+        url: '/download_csv',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
         dataType: 'text',  // Expecting text response
@@ -412,7 +412,7 @@ function fetchPlotdata() {
     $("#CCFSection").show();
     $.ajax({
         type: 'GET',
-        url: '/hispec_get_plot',
+        url: '/get_plot',
         data: {mode: 'off-axis'},
         success: function(response) {
             if (response && response.image) {
@@ -420,7 +420,7 @@ function fetchPlotdata() {
             };
             $.ajax({
         type: 'GET',
-        url: '/hispec_ccf_snr_get_number',
+        url: '/ccf_snr_get_number',
         data: {mode: 'off-axis'},
         success: function(response) {
             $('#yBandPlaceholder').append(response.y_band_snr);
