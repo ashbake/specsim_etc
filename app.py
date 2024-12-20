@@ -188,6 +188,8 @@ def define_config_file(data):
         config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HOWFE_HAKA_092823.csv'%instrument
         config['ao']['lo_wfe']        ='30'
         config['ao']['defocus']       ='25'
+        config['inst']['atm']         = '1'
+        config['inst']['adc']         = '1'
         #config['coron']['nactuators'] = '30',
         #config['coron']['fiber_contrast_gain'] = '3.'
     elif instrument=='modhis':
