@@ -478,7 +478,7 @@ function fetchPlotdata2() {
 
         function checkTaskStatus(taskId) {
     $.get(`/task/${taskId}`, function(response) {
-        if(response.status === 'SUCCESS') {
+        if(response.state === 'SUCCESS') {
             // Your code to plot the graph
         } else {
             setTimeout(function() {
