@@ -184,8 +184,8 @@ def define_config_file(data):
 
     # individual things for instrument type easier to define individually
     if instrument =='hispec':
-        config['ao']['ttdynamic_set'] = DATA_DIR +'instrument/%s/ao/TT_dynamic.csv'%instrument
-        config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HO_wfe.csv'%instrument
+        config['ao']['ttdynamic_set'] = DATA_DIR +'instrument/%s/ao/TTWFE_HAKA_092823.csv'%instrument
+        config['ao']['ho_wfe_set']    = DATA_DIR +'instrument/%s/ao/HOWFE_HAKA_092823.csv'%instrument
         config['ao']['lo_wfe']        ='30'
         config['ao']['defocus']       ='25'
         #config['coron']['nactuators'] = '30',
