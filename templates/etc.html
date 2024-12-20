@@ -288,7 +288,7 @@
             // Send the data to Flask backend (you can adjust this as per your requirements)
             $.ajax({
                 type: 'POST',
-                url: '/etc_snr_on_submit_data',
+                url: '/etc_submit_data',
                 contentType: 'application/json',
                 data: JSON.stringify(requestData),
                 dataType: 'json',
@@ -353,7 +353,7 @@ function submitData2() {
             // Send the data to Flask backend (you can adjust this as per your requirements)
             $.ajax({
                 type: 'POST',
-                url: '/etc_snr_on_submit_data',
+                url: '/etc_submit_data',
                 contentType: 'application/json',
                 data: JSON.stringify(requestData),
                 dataType: 'json',
