@@ -201,13 +201,13 @@
         
         <div class="row">
             <div class="col s12 left-align">
-                <button class="btn waves-effect waves-light" id="showdata" onclick="fetchPlotdata()">Show Data</button>
+                <button class="btn waves-effect waves-light" id="showdata" onclick="fetchPlotdata_offaxis()">Show Data</button>
             </div>
         </div>
         
         <div class="row">
             <div class="col s12 left-align">
-                <button class="btn waves-effect waves-light" id="showdata2" onclick="fetchPlotdata2()">Show Data</button>
+                <button class="btn waves-effect waves-light" id="showdata2" onclick="fetchPlotdata_onaxis()">Show Data</button>
             </div>
         </div>
         
@@ -219,9 +219,11 @@
         <div id="CCFSection" style="display: none;">
         <div class="row">
             <div class="col s12 left-align">
-                <h6 id="etc_ccf_label">Time for Target CCF (s):</h6><div id="numberPlaceholder"></div>
-                <h6 id="etc_ccf_label">Recommended Exposure Time Based on Target SNR (s):</h6><div id="numberPlaceholder2"></div>
-            </div>
+                <h6 id="ccf_label_y">y Band CCF ETC:</h6><div id="yBandPlaceholder">y Band CCF ETC: </div>
+                <h6 id="ccf_label_j">J Band CCF ETC:</h6><div id="jBandPlaceholder">J Band CCF ETC: </div>
+                <h6 id="ccf_label_h">H Band CCF ETC:</h6><div id="hBandPlaceholder">H Band CCF ETC: </div>
+                <h6 id="ccf_label_k">K Band CCF ETC:</h6><div id="kBandPlaceholder">K Band CCF ETC: </div>
+               </div>
         </div>
         </div>
         </div>
@@ -349,7 +351,7 @@ function submitData2() {
             // Send the data to Flask backend (you can adjust this as per your requirements)
             $.ajax({
                 type: 'POST',
-                url: '/hispec_etc_snr_on_submit_data',
+                url: '/etc_snr_on_submit_data',
                 contentType: 'application/json',
                 data: JSON.stringify(requestData),
                 dataType: 'json',
@@ -392,7 +394,7 @@ function downloadCSV() {
 
     $.ajax({
         type: 'POST',
-        url: '/hispec_etc_snr_on_download_csv',
+        url: '/etc_download_csv',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
         dataType: 'text',  // Expecting text response
@@ -402,7 +404,7 @@ function downloadCSV() {
             var blob = new Blob([response], {type: 'text/csv'});
             var link = document.createElement('a');
             link.href = window.URL.createObjectURL(blob);
-            link.download = 'data.csv';
+            link.download = 'hispec_etc.csv';
             link.click();
         },
         error: function(error) {
@@ -411,12 +413,12 @@ function downloadCSV() {
     });
 }
 
-function fetchPlotdata() {
+function fetchPlotdata_offaxis() {
     $("#PlotSection").show();
     $("#CCFSection").show();
     $.ajax({
         type: 'GET',
-        url: '/hispec_etc_snr_on_get_plot2',
+        url: '/etc_get_plot',
         data: {mode: 'off-axis'},
         timeout: 100000,
         success: function(response) {
@@ -428,9 +430,10 @@ function fetchPlotdata() {
         url: '/hispec_etc_ccf_snr_get_number',
         data: {mode: 'off-axis'},
         success: function(response) {
-            $('#numberPlaceholder').text(response.number);
-            $('#numberPlaceholder2').text(response.sugnumber);
-        },
+            $('#yBandPlaceholder').append(response.ccf_etc_y);
+            $('#jBandPlaceholder').append(response.ccf_etc_j);
+            $('#hBandPlaceholder').append(response.ccf_etc_h);
+            $('#kBandPlaceholder').append(response.ccf_etc_k);        },
         error: function(error) {
             console.log("Error occurred:", error);
             alert("Error occurred");
@@ -443,31 +446,18 @@ function fetchPlotdata() {
     });
 }
 
-function fetchPlotdata2() {
+function fetchPlotdata_onaxis() {
     $("#PlotSection").show();
     $("#CCFSection").show();
     $.ajax({
         type: 'GET',
-        url: '/hispec_etc_snr_on_get_plot2',
+        url: '/etc_get_plot',
         data: {mode: 'on-axis'},
         timeout: 100000,
         success: function(response) {
             if (response && response.image) {
                 $('#plotImg2').attr('src', 'data:image/png;base64,' + response.image);
             };
-            $.ajax({
-        type: 'GET',
-        url: '/hispec_etc_ccf_snr_get_number',
-        data: {mode: 'on-axis'},
-        success: function(response) {
-            $('#numberPlaceholder').text(response.number);
-            $('#numberPlaceholder2').text(response.sugnumber);
-        },
-        error: function(error) {
-            console.log("Error occurred:", error);
-            alert("Error occurred");
-        }
-    });
         },
         error: function(error) {
             alert("Error occurred fetching plot!");
@@ -503,11 +493,16 @@ function fetchPlotdata2() {
                 $('#submitBt').show();
                 $('#submitBt2').hide();
                 $('#etc_ccf').show();
-                $('#numberPlaceholder').show();
-                $('#numberPlaceholder2').show();
-                $('#etc_ccf_label').show();
-                $('#showdata').show();
-                $('#showdata2').hide();
+                $('#yBandPlaceholder').show();
+                $('#jBandPlaceholder').show();
+                $('#hBandPlaceholder').show();
+                $('#kBandPlaceholder').show();
+                $('#ccf_label_y').show();
+                $('#ccf_label_j').show();
+                $('#ccf_label_h').show();
+                $('#ccf_label_k').show();
+                $('#showdata_off').show();
+                $('#showdata_on').hide();
             } else {
                 $('#vsini_div').show();
                 $('#rv_div').show();
@@ -517,12 +512,17 @@ function fetchPlotdata2() {
                 $('#ang_sep_div').hide();
                 $('#submitBt').hide();
                 $('#submitBt2').show();
-                $('#etc_ccf').show();
-                $('#numberPlaceholder').show();
-                $('#numberPlaceholder2').show();
-                $('#etc_ccf_label').show();
-                $('#showdata').hide();
-                $('#showdata2').show();
+                $('#etc_ccf').hide();
+                $('#yBandPlaceholder').hide();
+                $('#jBandPlaceholder').hide();
+                $('#hBandPlaceholder').hide();
+                $('#kBandPlaceholder').hide();
+                $('#ccf_label_y').hide();
+                $('#ccf_label_j').hide();
+                $('#ccf_label_h').hide();
+                $('#ccf_label_k').hide();
+                $('#showdata_off').hide();
+                $('#showdata_on').show();
             }
         });
 
@@ -539,7 +539,10 @@ function fetchPlotdata2() {
         
             function resetOutputs() {
         $("#plotImg2").attr("src", "");  // Reset image source
-        $("#numberPlaceholder").text("");  // Reset number placeholder
+        $("#yBandPlaceholder").text("");  // Reset number placeholder
+        $("#jBandPlaceholder").text("");  // Reset number placeholder
+        $("#hBandPlaceholder").text("");  // Reset number placeholder
+        $("#kBandPlaceholder").text("");  // Reset number placeholder
         $('#result').html('');
     }
           </script>

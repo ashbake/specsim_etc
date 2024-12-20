@@ -396,7 +396,7 @@ function downloadCSV() {
 
     $.ajax({
         type: 'POST',
-        url: '/etc_snr_on_download_csv',
+        url: '/etc_download_csv',
         contentType: 'application/json',
         data: JSON.stringify(requestData),
         dataType: 'text',  // Expecting text response
@@ -420,7 +420,7 @@ function fetchPlotdata_offaxis() {
     $("#CCFSection").show();
     $.ajax({
         type: 'GET',
-        url: '/etc_snr_on_get_plot',
+        url: '/etc_get_plot',
         data: {mode: 'off-axis'},
         timeout: 100000,
         success: function(response) {
@@ -454,7 +454,7 @@ function fetchPlotdata_onaxis() {
     $("#CCFSection").hide();
     $.ajax({
         type: 'GET',
-        url: '/etc_snr_on_get_plot',
+        url: '/etc_get_plot',
         data: {mode: 'on-axis'},
         timeout: 100000,
         success: function(response) {

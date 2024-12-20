@@ -499,8 +499,8 @@ def etc_task_status(task_id):
         }
     return jsonify(response)
 
-@app.route('/etc_snr_on_download_csv', methods=['POST'])
-def etc_snr_on_download_csv():
+@app.route('/etc_download_csv', methods=['POST'])
+def etc_download_csv():
     #if session['id_2'][16:]== 'etc_off':
 
     csv_filename = 'signal' # TODO change later
@@ -526,8 +526,8 @@ def etc_snr_on_download_csv():
         headers={"Content-disposition": "attachment; filename={}.csv".format(csv_filename)}
     )
 
-@app.route('/etc_snr_on_get_plot', methods=['GET'])
-def etc_snr_on_get_plot():
+@app.route('/etc_get_plot', methods=['GET'])
+def etc_get_plot():
     # Fetch the latest data from the database
     data = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
     order_cens    = data.x_values
