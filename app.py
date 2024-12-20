@@ -103,7 +103,7 @@ def define_config_file(data):
     -----
     data - user input data
     """
-    instrument = data.instrument # pull outo instrument
+    instrument = data['instrument'] # pull outo instrument
 
     # some prep work on user data
     if data['zenith_angle']=='30':
