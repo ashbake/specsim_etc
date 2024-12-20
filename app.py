@@ -467,7 +467,7 @@ def etc_async_task(data,session_id):
 def etc():
     return render_template('etc.html')
 
-@app.route('/etc_snr_on_submit_data', methods=['POST'])
+@app.route('/etc_submit_data', methods=['POST'])
 def etc_submit_data():
     current_time = datetime.now()
     formatted_time = current_time.strftime('%Y%m%d%H%M%S%f')
