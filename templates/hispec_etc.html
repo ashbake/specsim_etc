@@ -375,7 +375,7 @@ function submitData2() {
         $.getJSON(location, function(data) {
             console.log("Received data:", data);
             $('#status').html('Calculation in Progress...');
-            if (data['status'] !== 'SUCCESS') {
+            if (data['state'] !== 'SUCCESS') {
                 console.log("Task not yet completed. Checking again...");
                 setTimeout(function() {
                     check_task(location);
