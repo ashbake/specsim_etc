@@ -201,13 +201,13 @@
         
         <div class="row">
             <div class="col s12 left-align">
-                <button class="btn waves-effect waves-light" id="showdata" onclick="fetchPlotdata_offaxis()">Show Data</button>
+                <button class="btn waves-effect waves-light" id="showdata_off" onclick="fetchPlotdata_offaxis()">Show Data</button>
             </div>
         </div>
         
         <div class="row">
             <div class="col s12 left-align">
-                <button class="btn waves-effect waves-light" id="showdata2" onclick="fetchPlotdata_onaxis()">Show Data</button>
+                <button class="btn waves-effect waves-light" id="showdata_on" onclick="fetchPlotdata_onaxis()">Show Data</button>
             </div>
         </div>
         
@@ -429,7 +429,7 @@ function fetchPlotdata_offaxis() {
             };
             $.ajax({
         type: 'GET',
-        url: '/hispec_etc_ccf_snr_get_number',
+        url: '/etc_ccf_snr_get_number',
         data: {mode: 'off-axis'},
         success: function(response) {
             $('#yBandPlaceholder').append(response.ccf_etc_y);

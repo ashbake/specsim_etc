@@ -228,6 +228,7 @@ def define_config_file(data):
     return config
 
 ##############
+# RUN SPECSIM AND FILL DATA MODEL FUNCTIONS
 @celery.task
 def async_fill_data(data,session_id):
     # define instrument, load config based on run mode and data
@@ -269,10 +270,45 @@ def async_fill_data(data,session_id):
 
     delete_old_cfg_files()
 
+@celery.task
+def etc_async_task(data,session_id):
+    # define instrument, load config based on run mode and data
+    config = define_config_file(data)
+
+    cfg_file_path = os.path.join(BASE_DIR, f"{session_id}config.cfg")
+    with open(cfg_file_path, 'w') as configfile:
+        config.write(configfile)
+    configfile = cfg_file_path # define our config file name and path
+
+    # run specsim!
+    so    = load_object(configfile)  
+    so.ao.mode = data['ao_mode']
+    cload = fill_data(so) 
+
+    # clear database if too big
+    check_and_clear_db()
+
+    # only run ccf snr etc if in off axis mode
+    if data['run_mode'] == 'etc_off':
+        ccf_vals = [so.obs.etc_ccf_snr_y,so.obs.etc_ccf_snr_J, so.obs.etc_ccf_snr_H, so.obs.etc_ccf_snr_K]
+    else:
+        ccf_vals = [-99,-99,-99,-99]
+
+    with app.app_context():
+        if data['run_mode'].startswith('etc'):
+            computed_data = ComputedData(
+                function_type='etc'+session_id, 
+                x_values=so.inst.order_cens, 
+                y_values=so.obs.etc_order_max,
+                ccf_vals=ccf_vals  
+            )
+
+            db.session.add(computed_data)
+            db.session.commit()
+
+    delete_old_cfg_files()
+
 ##############
-@app.route('/')
-def index():
-    return render_template('index.html')
 
 @app.route('/submit_data', methods=['POST'])
 def submit_data():
@@ -289,25 +325,6 @@ def submit_data():
     print(data)
     return jsonify({}), 202, {'Location': '/status/{}'.format(task.id)}
 
-@app.route('/status/<task_id>')
-def task_status(task_id):
-    task = async_fill_data.AsyncResult(task_id)
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Pending...'
-        }
-    elif task.state != 'FAILURE':
-        response = {
-            'state': task.state,
-            'result': task.result,
-        }
-    else:
-        response = {
-            'state': task.state,
-            'status': 'Task failed',
-        }
-    return jsonify(response)
 
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
@@ -424,48 +441,8 @@ def ccf_snr_get_number():
                     })
 
 ########### ETC START
-@celery.task
-def etc_async_task(data,session_id):
-    # define instrument, load config based on run mode and data
-    config = define_config_file(data)
-
-    cfg_file_path = os.path.join(BASE_DIR, f"{session_id}config.cfg")
-    with open(cfg_file_path, 'w') as configfile:
-        config.write(configfile)
-    configfile = cfg_file_path # define our config file name and path
-
-    # run specsim!
-    so    = load_object(configfile)  
-    so.ao.mode = data['ao_mode']
-    cload = fill_data(so) 
-
-    # clear database if too big
-    check_and_clear_db()
-
-    # only run ccf snr etc if in off axis mode
-    if data['run_mode'] == 'etc_off':
-        ccf_vals = [so.obs.etc_ccf_snr_y,so.obs.etc_ccf_snr_J, so.obs.etc_ccf_snr_H, so.obs.etc_ccf_snr_K]
-    else:
-        ccf_vals = [-99,-99,-99,-99]
-
-    with app.app_context():
-        if data['run_mode'].startswith('etc'):
-            computed_data = ComputedData(
-                function_type='etc'+session_id, 
-                x_values=so.inst.order_cens, 
-                y_values=so.obs.etc_order_max,
-                ccf_vals=ccf_vals  
-            )
-
-            db.session.add(computed_data)
-            db.session.commit()
-
-    delete_old_cfg_files()
 
 ###########
-@app.route('/etc')
-def etc():
-    return render_template('etc.html')
 
 @app.route('/etc_submit_data', methods=['POST'])
 def etc_submit_data():
@@ -481,25 +458,6 @@ def etc_submit_data():
     print(data)
     return jsonify({}), 202, {'Location': '/etc_status/{}'.format(task.id)}
 
-@app.route('/etc_status/<task_id>')
-def etc_task_status(task_id):
-    task = etc_async_task.AsyncResult(task_id)
-    if task.state == 'PENDING':
-        response = {
-            'state': task.state,
-            'status': 'Pending...'
-        }
-    elif task.state != 'FAILURE':
-        response = {
-            'state': task.state,
-            'result': task.result,
-        }
-    else:
-        response = {
-            'state': task.state,
-            'status': 'Task failed',
-        }
-    return jsonify(response)
 
 @app.route('/etc_download_csv', methods=['POST'])
 def etc_download_csv():
@@ -579,17 +537,66 @@ def etc_ccf_snr_get_number():
 
 
 ##################################################
-# HISPEC START
-############## HISPEC SNR
+# URL CALLS
+############## 
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/etc')
+def etc():
+    return render_template('etc.html')
+
 @app.route('/hispec_snr')
 def hispec_snr():
     return render_template('hispec_snr.html')
 
-
-###########
 @app.route('/hispec_etc')
 def hispec_etc():
     return render_template('hispec_etc.html')
+
+##############################
+# TASK STATUS
+# F12 
+@app.route('/status/<task_id>')
+def task_status(task_id):
+    task = async_fill_data.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'result': task.result,
+        }
+    else:
+        response = {
+            'state': task.state,
+            'status': 'Task failed',
+        }
+    return jsonify(response)
+
+@app.route('/etc_status/<task_id>')
+def etc_task_status(task_id):
+    task = etc_async_task.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        response = {
+            'state': task.state,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'result': task.result,
+        }
+    else:
+        response = {
+            'state': task.state,
+            'status': 'Task failed',
+        }
+    return jsonify(response)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0',port=5000,debug=True,threaded=True)
