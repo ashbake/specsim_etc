@@ -95,15 +95,16 @@ def check_and_clear_db():
     except Exception as e:
         print(f"Error in check_and_clear_db: {e}")
 
-def define_config_file(data,instrument):
+def define_config_file(data):
     """
     Defines the config file based on data and run mode
 
     inputs
     -----
     data - user input data
-    instrument - which instrument, modhis or hispec
     """
+    instrument = data.instrument # pull outo instrument
+
     # some prep work on user data
     if data['zenith_angle']=='30':
         airmass = '1.2'
@@ -226,10 +227,10 @@ def define_config_file(data,instrument):
 
 ##############
 @celery.task
-def async_fill_data(data,session_id,instrument):
+def async_fill_data(data,session_id):
     # define instrument, load config based on run mode and data
     #instrument = 'modhis'
-    config = define_config_file(data, instrument)
+    config = define_config_file(data)
 
     cfg_file_path = os.path.join(BASE_DIR, f"{session_id}config.cfg")
     with open(cfg_file_path, 'w') as configfile:
@@ -425,7 +426,7 @@ def ccf_snr_get_number():
 @celery.task
 def etc_async_task(data,session_id,instrument):
     # define instrument, load config based on run mode and data
-    config = define_config_file(data, instrument)
+    config = define_config_file(data)
 
     cfg_file_path = os.path.join(BASE_DIR, f"{session_id}config.cfg")
     with open(cfg_file_path, 'w') as configfile:
