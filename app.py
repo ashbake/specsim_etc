@@ -307,7 +307,6 @@ def task_status(task_id):
         }
     return jsonify(response)
 
-
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
     # Retrieve the most recent x and y values for the given function type from the database
