@@ -449,7 +449,7 @@ function fetchPlotdata_offaxis() {
 
 function fetchPlotdata_onaxis() {
     $("#PlotSection").show();
-    $("#CCFSection").show();
+    $("#CCFSection").hide();
     $.ajax({
         type: 'GET',
         url: '/etc_snr_on_get_plot',
