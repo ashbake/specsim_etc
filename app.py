@@ -325,7 +325,6 @@ def submit_data():
     print(data)
     return jsonify({}), 202, {'Location': '/status/{}'.format(task.id)}
 
-
 @app.route('/download_csv', methods=['POST'])
 def download_csv():
     # Retrieve the most recent x and y values for the given function type from the database
@@ -383,7 +382,7 @@ def get_plot():
     axs[0].grid('True')
     
     # plot throughput on second axis
-    ax2 = axs[0].twinx() 
+    ax2 = axs[0].twinx()
     ax2.plot(data_out.thrpt_x,data_out.thrpt_y,'k',alpha=0.5,zorder=-100,label='Total Throughput')
     ax2.set_ylabel('Total Throughput',fontsize=12)
     
@@ -417,9 +416,9 @@ def get_plot():
     axs[0].legend(fontsize=8,loc=2)
     ax2.legend(fontsize=8,loc=1)
     if session['id_1'][16:]== 'snr_off':
-        axs[0].set_title('TMT-MODHIS, Off Axis')
+        axs[0].set_title('Off Axis, SNR')
     elif session['id_1'][16:]== 'snr_on':
-        axs[0].set_title('TMT-MODHIS, On Axis')
+        axs[0].set_title('On Axis, SNR')
     
     # Save the plot to a BytesIO object
     img = io.BytesIO()
@@ -463,7 +462,7 @@ def etc_submit_data():
 def etc_download_csv():
     #if session['id_2'][16:]== 'etc_off':
 
-    csv_filename = 'signal' # TODO change later
+    csv_filename = 'etc_result' 
 
     # Retrieve the most recent x and y values for the given function type from the database
     computed_data = ComputedData.query.filter_by(function_type='etc'+session['id_2']).order_by(ComputedData.id.desc()).first()
@@ -499,7 +498,7 @@ def etc_get_plot():
 
     # label
     axs.set_ylabel('Seconds')
-    axs.set_title('TMT-MODHIS, ETC')
+    axs.set_title('ETC Per Order')
     axs.grid('True')
     axs.set_xlim(950,2400)
     axs.set_xlabel('Wavelength [nm]')

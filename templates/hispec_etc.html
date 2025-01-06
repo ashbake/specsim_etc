@@ -14,7 +14,7 @@
 </head>
 <body>
     <div class="container">
-    <img src="https://raw.githubusercontent.com/Hu1haoZhang/specsim_static_file/main/hispec.png">
+    <img src="./static/hispec.png">
     <h5 class="left-align">Exposure Time Calculator</h5><br>
     <div class="row">
         <div class="col s12 left-align">
@@ -49,7 +49,7 @@
         
         <div id="vsini_div" class="row">
             <div class="input-field col s12">
-                <input type="number" id="vsini" placeholder="km/s" value="34.79" required>
+                <input type="number" id="vsini" placeholder="km/s" value="2" required>
                 <label for="vsini">Vsini of On-axis Object (km/s)</label>
             </div>
         </div>
@@ -108,12 +108,9 @@
 <div class="input-field">
     <select id="ao_mode">
         <option value="auto">auto</option>
-        <option value="PyWFS_100H">PyWFS_100H</option>
-        <option value="PyWFS_100J">PyWFS_100J</option>
         <option value="NGS_SH">NGS_SH</option>
         <option value="LGS_STRAP">LGS_STRAP</option>
         <option value="LGS_100J">LGS_100J</option>
-        <option value="LGS_100H">LGS_100H</option>
     </select>
     <label>Mode of AO</label>
 </div>
@@ -152,12 +149,12 @@
 <label for="frame_exposure_time">Frame Exposure Time(s)</label>
 </div>
 <div class="input-field">
-<input type="number" id="target_snr" title='target noise to signal ratio'value="5" required>
+<input type="number" id="target_snr" title='target noise to signal ratio'value="100" required>
 <label for="target_snr">Target SNR</label>
 </div>
 
 <div class="input-field" id="etc_ccf">
-<input type="number" id="goal_ccf" placeholder="" title="" value="200" required>
+<input type="number" id="goal_ccf" placeholder="" title="" value="30" required>
 <label for="goal_ccf">Goal CCF</label>
 </div>
 
