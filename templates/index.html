@@ -102,6 +102,7 @@
 </form>
 <form>
     <h5 class="left-align">Instrument & Sky Setting</h5>
+    
     <div class="input-field">
         <select id="ao_mode">
             <option value="auto">auto</option>
@@ -111,7 +112,25 @@
         </select>
         <label>Mode of AO</label>
     </div>
-    
+
+    <div class="input-field">
+        <select id="ao_star">
+            <option value="default">default</option>
+            <option value="custom">custom</option>
+        </select>
+        <label>AO Star Properties (default assumes host star properties)</label>
+    </div>
+
+    <div class="input-field" id="ao_star_mag_div">
+        <input type="number" id="ao_star_mag" placeholder="Vega" title='AO Star Mag' value="10" required>
+        <label for="ao_star_mag"> AO Star Mag (Vega)</label>
+    </div>
+
+    <div class="input-field" id="ao_star_teff_div">
+        <input type="number" id="ao_star_teff" placeholder="K" title='AO Star Teff' value="2300" required>
+        <label for="ao_star_teff"> AO Star Teff (K) (200-12000)</label>
+    </div>
+
     <div class="input-field">
         <select id="atmospheric_conditions">
             <option value="good">Good</option>
@@ -131,6 +150,7 @@
         <label>Zenith Angle (degrees)</label>
     </div>
     
+
     <div class="input-field">
         <input type="number" id="pwv" placeholder="mm" title='precipitable water vapor' value="1.5" required>
         <label for="pwv">PWV (mm) (1-50)</label>
@@ -329,7 +349,10 @@ function submitData2() {
                 atmospheric_conditions: $("#atmospheric_conditions").val(),
                 run_mode: $("#object_type").val(),
                 exposure_time: $("#exposure_time").val(),
-                instrument: 'modhis'
+                instrument: 'modhis',
+                ao_star: $("#ao_star").val(),
+                ao_star_mag: $("#ao_star_mag").val(),
+                ao_star_teff: $("#ao_star_teff").val()
             };
 
             // Send the data to Flask backend (you can adjust this as per your requirements)
@@ -478,7 +501,7 @@ function fetchPlotdata2() {
         }
     });
 }
-
+// Function to switch inputs based on snr on / off selection
 (function() {
         $('#object_type').change(function() {
             const selectedType = $(this).val();
@@ -503,6 +526,12 @@ function fetchPlotdata2() {
                 $('#showdata').show();
                 $('#showdata2').hide();
                 $('#rv_div').hide();
+                $('#ao_star_mag_div').hide();
+                $('#ao_star_teff_div').hide();
+                if ( $('#ao_star').val() === 'custom') {
+                    $('#ao_star_mag_div').show();
+                    $('#ao_star_teff_div').show();
+                } 
             } else {
                 $('#vsini_div').show();
                 $('#rv_div').show();
@@ -523,13 +552,36 @@ function fetchPlotdata2() {
                 $('#kBandPlaceholder').show();
                 $('#showdata').hide();
                 $('#showdata2').show();
+                if ( $('#ao_star').val() === 'custom') {
+                        $('#ao_star_mag_div').show();
+                        $('#ao_star_teff_div').show();
+                    } 
             }
         });
 
         // Trigger the change event to set the initial state
         $('#object_type').trigger('change');
     })();
-    
+ 
+// function to change inputs based on AO mode
+(function() {
+        $('#ao_star').change(function() {
+            const selectedType = $('#ao_star').val();
+
+            if ( $('#ao_star').val() === 'default') {
+                $('#ao_star_mag_div').hide();
+                $('#ao_star_teff_div').hide();
+            } else {
+                $('#ao_star_mag_div').show();
+                $('#ao_star_teff_div').show();
+            }
+        });
+
+        // Trigger the change event to set the initial state
+        $('#object_type').trigger('change');
+    })();
+
+
     </script>
   <script type="text/javascript" src="/static/materialize.min.js"></script>
   <script>

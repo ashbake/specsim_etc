@@ -441,8 +441,6 @@ def ccf_snr_get_number():
 
 ########### ETC START
 
-###########
-
 @app.route('/etc_submit_data', methods=['POST'])
 def etc_submit_data():
     current_time = datetime.now()
@@ -456,7 +454,6 @@ def etc_submit_data():
     # For now, just print it to the console
     print(data)
     return jsonify({}), 202, {'Location': '/etc_status/{}'.format(task.id)}
-
 
 @app.route('/etc_download_csv', methods=['POST'])
 def etc_download_csv():
