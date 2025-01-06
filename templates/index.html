@@ -528,6 +528,7 @@ function fetchPlotdata2() {
                 $('#rv_div').hide();
                 $('#ao_star_mag_div').hide();
                 $('#ao_star_teff_div').hide();
+                $('#ao_star').show();
                 if ( $('#ao_star').val() === 'custom') {
                     $('#ao_star_mag_div').show();
                     $('#ao_star_teff_div').show();
@@ -552,6 +553,7 @@ function fetchPlotdata2() {
                 $('#kBandPlaceholder').show();
                 $('#showdata').hide();
                 $('#showdata2').show();
+                $('#ao_star').show();
                 if ( $('#ao_star').val() === 'custom') {
                         $('#ao_star_mag_div').show();
                         $('#ao_star_teff_div').show();
@@ -563,23 +565,6 @@ function fetchPlotdata2() {
         $('#object_type').trigger('change');
     })();
  
-// function to change inputs based on AO mode
-(function() {
-        $('#ao_star').change(function() {
-            const selectedType = $('#ao_star').val();
-
-            if ( $('#ao_star').val() === 'default') {
-                $('#ao_star_mag_div').hide();
-                $('#ao_star_teff_div').hide();
-            } else {
-                $('#ao_star_mag_div').show();
-                $('#ao_star_teff_div').show();
-            }
-        });
-
-        // Trigger the change event to set the initial state
-        $('#object_type').trigger('change');
-    })();
 
 
     </script>
