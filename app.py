@@ -157,7 +157,8 @@ def define_config_file(data):
                 'tt_static':'0',
                 'lo_wfe':'10',
                 'defocus':'10',
-                'mag':'default'}
+                'mag':'default',
+                'teff':'default'}
     config['track']={'band':'JHgap',
                     'fratio':'35',
                     'camera':'h2rg',
@@ -201,6 +202,11 @@ def define_config_file(data):
         #config['coron']['nactuators'] ='58' #TODO incorporate this into code input
         #config['coron']['fiber_contrast_gain'] = '10.'
 
+    # decide on AO star properties
+    if data['ao_star'] =='custom':
+        config['ao']['mag'] = data['ao_star_mag']
+        config['ao']['teff'] = data['ao_star_teff']
+        
     # if off axis, define planet stuff
     if data['run_mode'] == 'snr_off' or data['run_mode'] =='etc_off':
         if float(data['planet_temperature']) <= 7400:
