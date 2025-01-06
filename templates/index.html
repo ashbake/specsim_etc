@@ -204,6 +204,14 @@
 
 <div class="row">
     <div class="col s12 left-align">
+        <a href="/data/abaker/specsim_etc/user_data/2025010615271753snr_onconfig.cfg" download="config_file">
+            <button class="btn waves-effect waves-light" type="button">Download Config</button>
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col s12 left-align">
         <button class="btn waves-effect waves-light" id="showdata" onclick="fetchPlotdata()">Show Data</button>
     </div>
 </div>
@@ -415,7 +423,7 @@ function submitData2() {
             var blob = new Blob([response], {type: 'text/csv'});
             var link = document.createElement('a');
             link.href = window.URL.createObjectURL(blob);
-            link.download = 'data.csv';
+            link.download = 'snr_results.csv';
             link.click();
         },
         error: function(error) {

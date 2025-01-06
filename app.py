@@ -204,7 +204,7 @@ def define_config_file(data):
 
     # decide on AO star properties
     if data['ao_star'] =='custom':
-        config['ao']['mag'] = data['ao_star_mag']
+        config['ao']['mag']  = data['ao_star_mag']
         config['ao']['teff'] = data['ao_star_teff']
         
     # if off axis, define planet stuff
@@ -306,7 +306,7 @@ def etc_async_task(data,session_id):
                 function_type='etc'+session_id, 
                 x_values=so.inst.order_cens, 
                 y_values=so.obs.etc_order_max,
-                ccf_vals=ccf_vals  
+                ccf_vals=ccf_vals
             )
 
             db.session.add(computed_data)
@@ -356,7 +356,7 @@ def download_csv():
     return Response(
         csv_data,
         mimetype="text/csv",
-        headers={"Content-disposition": "attachment; filename={}.csv".format(session['id_1'][16:])}
+        headers={"Content-disposition": "attachment; filename={}.csv".format('snr_results')}
     )
 
 @app.route('/get_plot', methods=['GET'])
