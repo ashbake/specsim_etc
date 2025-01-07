@@ -271,7 +271,7 @@ def async_fill_data(data,session_id):
             thrpt_y = so.inst.ytransmit,
             ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K],
             configfile=configfile,
-            instrument=data.instrument
+            instrument=data['instrument']
         )
         
         # add data to database then commit.......pretty sure this could be done by saving data to file then opening those files later but eh 
