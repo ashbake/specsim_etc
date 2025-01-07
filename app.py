@@ -312,7 +312,7 @@ def etc_async_task(data,session_id):
                 y_values=so.obs.etc_order_max,
                 ccf_vals=ccf_vals,
                 configfile=configfile,
-                instrument=data.instrument
+                instrument=data['instrument']
             )
 
             db.session.add(computed_data)
