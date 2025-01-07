@@ -53,7 +53,7 @@ from specsim.objects import load_object
 from specsim.load_inputs import fill_data
 from specsim.functions import *
 
-
+# Data Model
 class ComputedData(db.Model):
     # DATA MODEL for data storage
     # This class is used to store data from runs and query it out later
@@ -69,6 +69,8 @@ class ComputedData(db.Model):
     thrpt_x  = db.Column(db.PickleType)
     thrpt_y  = db.Column(db.PickleType)
     ccf_vals = db.Column(db.PickleType) # length 4 for each band
+    instrument = db.Column(db.String(30))
+    configfile= db.Column(db.String(30))
 
 # Create the table
 with app.app_context():
@@ -267,7 +269,9 @@ def async_fill_data(data,session_id):
             rv_y    = so.obs.rv_order,
             thrpt_x = so.inst.xtransmit,
             thrpt_y = so.inst.ytransmit,
-            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K]
+            ccf_vals= [so.obs.ccf_snr_y, so.obs.ccf_snr_J, so.obs.ccf_snr_H, so.obs.ccf_snr_K],
+            configfile=configfile,
+            instrument=data.instrument
         )
         
         # add data to database then commit.......pretty sure this could be done by saving data to file then opening those files later but eh 
@@ -306,7 +310,9 @@ def etc_async_task(data,session_id):
                 function_type='etc'+session_id, 
                 x_values=so.inst.order_cens, 
                 y_values=so.obs.etc_order_max,
-                ccf_vals=ccf_vals
+                ccf_vals=ccf_vals,
+                configfile=configfile,
+                instrument=data.instrument
             )
 
             db.session.add(computed_data)
