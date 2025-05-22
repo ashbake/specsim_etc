@@ -127,9 +127,9 @@ def define_config_file(data):
     config = configparser.ConfigParser()
     config['run']={'plot_prefix':'testrun','savename':'test.txt','instrument':instrument,
                 'mode':data['run_mode']}
-    config['stel']={'phoenix_folder':DATA_DIR + '/phoenix/Z-0.0/','sonora_folder':DATA_DIR + 'sonora/',
+    config['stel']={'phoenix_folder':DATA_DIR + 'phoenix/Z-0.0/','sonora_folder':DATA_DIR + 'sonora/',
                     'vsini':'0','rv':'0','teff':star_temp,'mag':data['star_magnitude'],'pl_rv':'0'}
-    config['filt']={'zp_file':DATA_DIR + '/filters/zeropoints.txt','filter_path':DATA_DIR + 'filters/'
+    config['filt']={'zp_file':DATA_DIR + 'filters/zeropoints.txt','filter_path':DATA_DIR + 'filters/'
                     ,'band':data['filter'][-1],'family':data['filter'][:-2]}
     config['tel']={'telluric_file':DATA_DIR + 'telluric/psg_out_2020.08.02_l0_800nm_l1_2700nm_res_0.001nm_lon_204.53_lat_19.82_pres_0.5826.fits'
                 ,'skypath':DATA_DIR + 'sky/','airmass':airmass,'pwv':data['pwv'],'seeing_set':data['atmospheric_conditions'],
@@ -142,14 +142,12 @@ def define_config_file(data):
                     'l1':'2650',
                     'res':'100000',
                     'res_samp':'3',
-                    'pix_vert':'3',
+                    'pix_vert':'4',
                     'extraction_frac':'0.925',
-                    'tel_area':'655',
-                    'tel_diam':'30',
                     'readnoise':'12',
                     'darknoise':'0.01',
                     'saturation':'100000',
-                    'pl_on':'1',
+                    'pl_on':'0',
                     'rv_floor':'0.5',
                     'post_processing':'10'}
     config['obs']={'texp_frame_set':'default',
@@ -193,6 +191,8 @@ def define_config_file(data):
         config['ao']['defocus']       ='25'
         config['inst']['atm']         = '1'
         config['inst']['adc']         = '1'
+        config['inst']['tel_area']    = '76.2'
+        config['inst']['tel_diam']    = '10'
         #config['coron']['nactuators'] = '30',
         #config['coron']['fiber_contrast_gain'] = '3.'
     elif instrument=='modhis':
@@ -201,7 +201,8 @@ def define_config_file(data):
         config['ao']['lo_wfe']        ='10'
         config['ao']['defocus']       ='10'
         config['ao']['contrast_profile_path'] = DATA_DIR + 'instrument/%s/ao/contrastcurves/'%instrument
-        #config['coron']['nactuators'] ='58' #TODO incorporate this into code input
+        config['inst']['tel_area']    = '655'
+        config['inst']['tel_diam']    = '30'        #config['coron']['nactuators'] ='58' #TODO incorporate this into code input
         #config['coron']['fiber_contrast_gain'] = '10.'
 
     # decide on AO star properties
